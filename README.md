@@ -6,3 +6,6 @@ instructions:
 * find -iname "*.mp3" <some dir> > riddim.m3u
 * ./bin/riddim
 * point your music player at:  http://localhost:18944 (assuming you kept that port in config.h)
+
+
+*Note:  it doesn't do anything yet!
