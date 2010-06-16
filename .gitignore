@@ -4,3 +4,5 @@ obj
 mp3
 ogg
 *.log
+*.pid
+*.pyc

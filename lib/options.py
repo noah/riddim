@@ -6,6 +6,7 @@ class RiddimOptions:
         self.op = OptionParser()
         self.op.disable_interspersed_args() # unix-style
         self.op.add_option('-k','--signal',help='signal stop/start/status')
+        self.op.add_option('-P','--port',help='port number to try')
         self.flags = {
                 # server booleans
                 '-p' : ['--play',       'start playback'],
@@ -17,6 +18,7 @@ class RiddimOptions:
                 '-S' : ['--shuffle',    'toggle shuffle'],
                 '-Q' : ['--query',      'display server state'],
                 '-c' : ['--clear',      'clear playlist'],
+                # only with signals
                 '-f' : ['--foreground', 'don\'t for the server'],
                 # non-bool
                 '-e' : ['--enqueue',    'enqueue track(s) onto playlist'],
@@ -29,6 +31,7 @@ class RiddimOptions:
         self.signal = self.check_signal()
         if self.signal:
             self.foreground = self.options.foreground
+            self.port = self.options.port
         else:
             self.flag = self.check_flag()
     
