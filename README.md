@@ -8,7 +8,7 @@ Design goals
         * Verbs copy/pasted from cmus-remote
 
 TODO
-  ICY metadata
+  * ICY metadata
 
 Synopsis
     Usage: riddim.py [options]
