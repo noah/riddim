@@ -23,7 +23,7 @@ def start_server(port):
                     (ip,str(port),riddim_server_thread.getName()))
             break
         # FIXME make this not suck at error handling
-        # socket busy OK; permission denied (low port) NOT!
+        # socket busy OK; permission denied (low port) NOT
         except Exception as e:
             print "RiddimServer not running %s" % e
             print "Will try to start again in %d seconds." % 30
