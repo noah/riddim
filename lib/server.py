@@ -8,7 +8,7 @@ from lib.streamer import RiddimStreamer
 class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_HEAD(self):
-        self.request.send("ICY 200 OK")
+        self.send_response(200,"ICY")
         headers = {
             'icy-notice1'   : '<BR>Riddim<BR>',
             'icy-notice2'   : 'riddim-server<BR>',
@@ -22,6 +22,7 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         }
         for k,v, in headers.iteritems():
             self.send_header(k,v)
+        self.end_headers()
 
     def do_POST(self):
         """ xmlrpclib """
@@ -70,7 +71,6 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 print "Couldn't get user agent!"
 
         self.do_HEAD()
-
         # playlist = RiddimPlaylist()
         streamer = RiddimStreamer(self.request)
         streamer.stream()
