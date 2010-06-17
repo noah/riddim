@@ -40,7 +40,7 @@ class Riddim:
 
     def hello(self):
         print """
-            RiDDiM v0.1
+            RiDDiM
         """
 
     def pid(self):
