@@ -11,7 +11,6 @@ from lib.server import RiddimServer
 class Riddim:
     def __init__(self):
         self.cwd = os.getcwd()
-        self.media_dir = os.path.join(self.cwd,'mp3')
         self.logfile = os.path.join(self.cwd,'riddim.log')
         self.pidfile = os.path.join(self.cwd,'riddim.pid')
         self.o = RiddimOptions()
@@ -22,7 +21,7 @@ class Riddim:
         for retry in range(1, (int(5 * MINUTE) / INTERVAL)):
             try:
                 time.sleep(0.001)
-                riddim_server = RiddimServer(('0.0.0.0',int(port)),self.media_dir)
+                riddim_server = RiddimServer(('0.0.0.0',int(port)))
                 ip, port = riddim_server.server_address
                 riddim_server_thread = threading.Thread(
                         target=riddim_server.serve_forever)
