@@ -1,0 +1,5 @@
+RiDDiM v0.1a -- A modern music streamer, written in python.
+
+TODO
+        * Playlist management
+        * Some kind of RPC for state management
