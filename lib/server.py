@@ -1,8 +1,10 @@
 import os
 import glob
+import time
+import errno
 import socket
 import SocketServer # see:  http://docs.python.org/library/socketserver.html
-import SimpleXMLRPCServer
+import BaseHTTPServer
 
 #   It's always a good day for smoking crack at winamp, inc.
 #
@@ -55,73 +57,122 @@ def get_mp3_start(path):
     f.close()
     return start
 
-class RiddimServerRequestHandler(SocketServer.BaseRequestHandler):
+from pprint import pprint
+class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    def __init__(self,request,client_address,server):
-        self.server = server
-        SocketServer.BaseRequestHandler.__init__(self, request, client_address,
-                server)
+    def do_GET(self):
+        H = self.headers
+        try:
+            print H['icy-metadata']
+        except KeyError, e:
+            print H
+            print e
 
-    def get_meta(self,path):
-        # lifted from amarok
-        META = "%cStreamTitle='%s';StreamUrl='%s';%s"
-        PADDING = '\x00' * 16
-        if self.dirty_meta:
-            stream_title = "%s - %s" % mp3tags(path)
-            stream_url = "http://downbe.at/"
+    # def get_meta(self,path):
+    #     # lifted from amarok
+    #     META = "%cStreamTitle='%s';StreamUrl='%s';%s"
+    #     PADDING = '\x00' * 16
+    #     if self.dirty_meta:
+    #         stream_title = "%s - %s" % mp3tags(path)
+    #         stream_url = "http://downbe.at/"
 
-            # The literal 28 is the number of static characters in the META string (see top)
-            length = len(stream_title) + len(stream_url) + 28
-            padding = 16 - length % 16
-            meta = META % ( (length + padding)/16, stream_title, stream_url, PADDING[:padding] )
-            self.dirty_meta = False
-            return meta
-        else:
-            return '\x00'
-    
-    def handle(self):
-        bufsize = 4096
-        print 'handling request'
-        # self.request is the socket connect, SocketServer gives us this instance
-        self.request.sendall(icy_header())
-        # mp3, MP3, mP3, Mp3 <-- why do people insist on mixed-case filenames?
-        playlist = glob.glob(os.path.join(self.server.media_dir,'*.[mM][pP]3'))  
+    #         # The literal 28 is the number of static characters in the META string (see top)
+    #         length = len(stream_title) + len(stream_url) + 28
+    #         padding = 16 - length % 16
+    #         meta = META % ( (length + padding)/16, stream_title, stream_url, PADDING[:padding] )
+    #         self.dirty_meta = False
+    #         return meta
+    #     else:
+    #         return '\x00'
+    # 
+    # def handle(self):
+    #     # The following are representative of the types of headers we might 
+    #     # need to handle:
+    #     """ MPLAYER"""
+    #     # GET / HTTP/1.0
+    #     # Host: downbe.at:18944
+    #     # User-Agent: MPlayer/SVN-r31347-4.5.0
+    #     # Icy-MetaData: 1
+    #     # Connection: close
 
-        # icy streaming
-        META_INTERVAL = 16384
+    #     # GET / HTTP/1.0
+    #     # Accept: */*
+    #     # User-Agent: NSPlayer/4.1.0.3856
+    #     # Host: downbe.at:18944
+    #     # Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}
+    #     # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,request-context=1,max-duration=0
+    #     # Connection: Close
 
-        for FILE in playlist:
-            print 'streaming %s ' % FILE
-            f = file(FILE,'r')
-            fsize = os.stat(FILE)[6]
-            mp3start = get_mp3_start(FILE)
-            #f.seek(fsize * pos + mp3start)
-            f.seek(mp3start)
+    #     # GET / HTTP/1.0
+    #     # Host: downbe.at:18944
+    #     # User-Agent: MPlayer/SVN-r31347-4.5.0
+    #     # Icy-MetaData: 1
+    #     # Connection: close
 
-            byte_count = 0
-            self.dirty_meta = True
-            # lifted from amarok
-            while f.tell() < fsize and True:
-                bytes_until_meta = META_INTERVAL - byte_count
-                #print 'bytes until meta %s' % bytes_until_meta
-                if bytes_until_meta == 0:
-                    meta = self.get_meta(FILE)
-                    self.request.send(meta)
-                    byte_count = 0
-                else:
-                    if bytes_until_meta < bufsize:
-                        buf = f.read(bytes_until_meta)
-                        self.request.send(buf)
-                        byte_count += len(buf)
-                    else:
-                        buf = f.read(bufsize)
-                        self.request.send(buf)
-                        byte_count += len(buf)
-            self.dirty_meta = True
-        return
+    #     """ cmus """
+    #     # GET / HTTP/1.0
+    #     # Host: downbe.at
+    #     # User-Agent: cmus/v2.3.2
+    #     # Icy-MetaData: 1
 
-class RiddimServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
+    #     """ xmlrpclib """
+    #     # POST /RPC2 HTTP/1.0
+    #     # Host: downbe.at:18944
+    #     # User-Agent: xmlrpclib.py/1.0.1 (by www.pythonware.com)
+    #     # Content-Type: text/xml
+    #     # Content-Length: 112
+
+    #     print self.headers
+
+    #     # self.request is the socket connect, SocketServer gives us this instance
+    #     #self.request.send(icy_header())
+    #     # mp3, MP3, mP3, Mp3 <-- why do people insist on mixed-case filenames?
+    #     playlist = glob.glob(os.path.join(self.server.media_dir,'*.[mM][pP]3'))  
+    #     # icy streaming
+    #     #bufsize = 4096
+    #     #META_INTERVAL = 16384
+
+    #     #for FILE in playlist:
+    #     #    print 'streaming %s ' % FILE
+    #     #    f = file(FILE,'r')
+    #     #    fsize = os.stat(FILE)[6]
+    #     #    mp3start = get_mp3_start(FILE)
+    #     #    #f.seek(fsize * pos + mp3start)
+    #     #    f.seek(mp3start)
+
+    #     #    try:
+    #     #        byte_count = 0
+    #     #        self.dirty_meta = True
+    #     #        # lifted from amarok
+    #     #        while f.tell() < fsize and True:
+    #     #            bytes_until_meta = META_INTERVAL - byte_count
+    #     #            #print 'bytes until meta %s' % bytes_until_meta
+    #     #            if bytes_until_meta == 0:
+    #     #                meta = self.get_meta(FILE)
+    #     #                self.request.send(meta)
+    #     #                byte_count = 0
+    #     #            else:
+    #     #                if bytes_until_meta < bufsize:
+    #     #                    buf = f.read(bytes_until_meta)
+    #     #                    self.request.send(buf)
+    #     #                    byte_count += len(buf)
+    #     #                else:
+    #     #                    buf = f.read(bufsize)
+    #     #                    self.request.send(buf)
+    #     #                    byte_count += len(buf)
+    #     #        self.dirty_meta = True
+    #     #    #except socket.error, e:
+    #     #    #    print "Uh oh, socket error"
+    #     #    #    print e
+    #     #    except IOError, e:
+    #     #        if e.errno == errno.EPIPE:
+    #     #            print "client disconnected"
+    #     #            print e
+    #     #        print e
+    #     #return
+
+
+class RiddimServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     def __init__(self,addr,media_dir):
         self.media_dir = media_dir
-        print "initializing TCPServer"
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)

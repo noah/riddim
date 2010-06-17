@@ -18,10 +18,11 @@ class Riddim:
 
     def start_server(self,port):
         MINUTE=60
-        INTERVAL=30
+        INTERVAL=2
         for retry in range(1, (int(5 * MINUTE) / INTERVAL)):
             try:
-                riddim_server = RiddimServer(('localhost',int(port)),self.media_dir)
+                time.sleep(0.001)
+                riddim_server = RiddimServer(('0.0.0.0',int(port)),self.media_dir)
                 ip, port = riddim_server.server_address
                 riddim_server_thread = threading.Thread(
                         target=riddim_server.serve_forever)
@@ -34,7 +35,7 @@ class Riddim:
             # socket busy OK; permission denied (low port) NOT
             except Exception as e:
                 print "RiddimServer not running %s" % e
-                print "Will try to start again in %d seconds." % 30
+                print "Will try to start again in %d seconds." % INTERVAL
                 time.sleep(INTERVAL)
         return (riddim_server, riddim_server_thread)
 
