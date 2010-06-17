@@ -1,3 +1,4 @@
+import os
 import glob
 import SocketServer # see:  http://docs.python.org/library/socketserver.html
 import SimpleXMLRPCServer
@@ -32,22 +33,32 @@ def mp3tags(path):
     return tag.getArtist(),tag.getAlbum(),tag.getTitle()
 
 class RiddimServerRequestHandler(SocketServer.BaseRequestHandler):
+
+    def __init__(self,request,client_address,server):
+        self.server = server
+        SocketServer.BaseRequestHandler.__init__(self, request, client_address,
+                server)
     
     def handle(self):
 
         print 'handling request'
         # self.request is the socket connect, SocketServer gives us this instance
         self.request.sendall(icy_header())
-        playlist = glob.glob('./mp3/*.mp3')
+
+        # mp3, MP3, mP3, Mp3 <-- why do people insist on mixed-case filenames?
+        playlist = glob.glob(os.path.join(self.server.media_dir,'*.[mM][pP]3'))  
+        print playlist
+
         for mp3 in playlist:
             print "%s - %s - %s" % mp3tags(mp3)
-            # Echo the back to the client
             with open(mp3) as FILE:
                 for bytes in FILE:
                     self.request.send(bytes)
         return
 
 class RiddimServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
-    def __init__(self,addr):
+    def __init__(self,addr,media_dir):
+        self.media_dir = media_dir
         print "initializing TCPServer"
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)
+
