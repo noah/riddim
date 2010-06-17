@@ -6,7 +6,7 @@ class RiddimOptions:
         self.op = OptionParser()
         self.op.disable_interspersed_args() # unix-style
         self.op.add_option('-k','--signal',help='signal stop/start/status')
-        self.op.add_option('-P','--port',default=18449,help='port number to try')
+        self.op.add_option('-P','--port',default=18944,help='port number to try')
         self.flags = {
                 # server booleans
                 '-p' : ['--play',       'start playback'],
