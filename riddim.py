@@ -56,7 +56,7 @@ class Riddim:
             print "If you think RiDDiM is not running, delete riddim.pid"
             sys.exit()
         else:
-            print "RiDDiM starting . . ."
+            print "RiDDiM running on http://localhost:%s" % self.o.port
             if not self.o.foreground:
                 daemonize(stderr=self.logfile,stdout=self.logfile)
             pid = os.getpid()

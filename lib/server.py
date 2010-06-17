@@ -1,5 +1,6 @@
 import os
 import glob
+import socket
 import SocketServer # see:  http://docs.python.org/library/socketserver.html
 import SimpleXMLRPCServer
 
@@ -36,7 +37,7 @@ icy-pub: 0
 icy-br: 128
 icy-metaint: 16384
 
-""" % ("localhost")
+""" % (socket.gethostname())
 
 def mp3tags(path):
     tag = eyeD3.Tag()
