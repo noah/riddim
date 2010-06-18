@@ -21,6 +21,9 @@ class RiddimMP3:
     def __str__(self):
         return ' - '.join(self.tags())
 
+    def bitrate(self):
+        return eyeD3.Mp3AudioFile(self.path).getBitRate()[1]
+
     def tags(self):
         tag = eyeD3.Tag()
         tag.link(self.path)
