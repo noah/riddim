@@ -103,6 +103,6 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         for file in playlist:
             streamer.stream(file,icy_client)
 
-class RiddimServer(BaseHTTPServer.HTTPServer):
+class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer):
     def __init__(self,addr):
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)
