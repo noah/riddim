@@ -10,7 +10,7 @@ class RiddimStreamer:
         self.request = request
         self.byte_count = 0
 
-    #  It's always a good day for smoking crack at winamp, inc.
+    #  It's always a good day for smoking crack at Nullsoft!
     #
     # See amarok for ideas on the (crappy) icecast metadata "protocol"
     # http://www.google.com/codesearch/p?hl=en#bor5KmW_n7E/pub/freeware/KDE/SOURCES/IA32AMD32/amarok-1.3.5.S10X86.SS10.tar.bz2%7CBIlNJDe3jFE/amarok-1.3.5/amarok/src/scripts/shouter/Services.py&q=ICYRESP&exact_package=ftp://ftp.sunfreeware.com/pub/freeware/KDE/SOURCES/IA32AMD32/amarok-1.3.5.S10X86.SS10.tar.bz2&l=118
@@ -40,40 +40,39 @@ class RiddimStreamer:
         self.mp3 = RiddimMP3(path)
         print 'streaming %s' % self.mp3
 
-        # main loop, lifted from amarok
-        buffer = 0
-        buffer_size = 4096
-        metadata_interval = 16384
+        try:
+            # main loop, lifted from amarok
+            buffer = 0
+            buffer_size = 4096
+            metadata_interval = 16384
 
-        f = file(path, 'r')
-        f.seek(self.mp3.start())
-        self.dirty_meta = True
-        mp3_size = self.mp3.size()
-        while f.tell() < mp3_size:
-            bytes_until_meta = (metadata_interval - self.byte_count)
-            print "%s bytes_until_meta" % bytes_until_meta
-            if bytes_until_meta == 0:
-                if icy_client:
-                    meta = self.get_meta()
-                    self.request.send(meta)
-                    print "sent %s (len:  %s)" % (meta,len(meta))
-                self.byte_count = 0
-            else:
-                if bytes_until_meta < buffer_size:
-                    n_bytes = bytes_until_meta
+            f = file(path, 'r')
+            f.seek(self.mp3.start())
+            self.dirty_meta = True
+            mp3_size = self.mp3.size()
+            while f.tell() < mp3_size:
+                bytes_until_meta = (metadata_interval - self.byte_count)
+                if bytes_until_meta == 0:
+                    if icy_client:
+                        meta = self.get_meta()
+                        self.request.send(meta)
+                    self.byte_count = 0
                 else:
-                    n_bytes = buffer_size
+                    if bytes_until_meta < buffer_size:
+                        n_bytes = bytes_until_meta
+                    else:
+                        n_bytes = buffer_size
 
-                buffer = f.read(n_bytes)
-                self.request.send(buffer)
-                self.byte_count += len(buffer)
-        self.dirty_meta = True
+                    buffer = f.read(n_bytes)
+                    self.request.send(buffer)
+                    self.byte_count += len(buffer)
+            self.dirty_meta = True
         #except socket.error, e:
         #    print "Uh oh, socket error"
         #    print e
-        #except IOError, e:
-        #    if e.errno == errno.EPIPE:
-        #        print "client disconnected"
-        #        print e
-        #    print e
+        except IOError, e:
+            if e.errno == errno.EPIPE:
+                print "client disconnected"
+                print e
+            print e
     #return
