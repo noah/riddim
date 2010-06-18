@@ -1,3 +1,5 @@
+import os
+import glob
 import socket
 import SocketServer # see:  http://docs.python.org/library/socketserver.html
 import BaseHTTPServer
@@ -7,21 +9,26 @@ from lib.streamer import RiddimStreamer
 
 class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    def do_HEAD(self):
-        self.send_response(200,"ICY")
-        headers = {
-            'icy-notice1'   : '<BR>Riddim<BR>',
-            'icy-notice2'   : 'riddim-server<BR>',
-            'icy-name'      : 'riddim on %s' % socket.gethostname(),
-            'icy-genre'     : 'unknown',
-            'icy-url'       : 'http://github.com/noah/riddim',
-            'content-type'  : 'audio/mpeg',
-            'icy-pub'       : 0,
-            'icy-br'        : 128,
-            'icy-metaint'   : 16384
-        }
-        for k,v, in headers.iteritems():
-            self.send_header(k,v)
+    def do_HEAD(self,icy_client):
+        if icy_client:
+            self.send_response(200,"ICY")
+            headers = {
+                'icy-notice1'   : '<BR>Riddim<BR>',
+                'icy-notice2'   : 'riddim-server<BR>',
+                'icy-name'      : 'riddim on %s' % socket.gethostname(),
+                'icy-genre'     : 'unknown',
+                'icy-url'       : 'http://github.com/noah/riddim',
+                'content-type'  : 'audio/mpeg',
+                'icy-pub'       : 0,
+                #'icy-br'        : 128,
+                'icy-metaint'   : 16384
+            }
+            for k,v, in headers.iteritems():
+                self.send_header(k,v)
+        else:
+            self.send_response(200)
+            self.send_header('Content-Type', 'audio/x-mpegurl')
+            self.end_headers()
         self.end_headers()
 
     def do_POST(self):
@@ -67,27 +74,35 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
         H = self.headers
-        legit_client = False
+        icy_client = False
         try:
-            legit_client = (int(H['icy-metadata']) == 1)
+            icy_client = (int(H['icy-metadata']) == 1)
         except KeyError, e:
-            print "Key not found:  %s" % e
+            print "non-icy (dry?) client:  %s" % e
 
         user_agent = None
-        if legit_client:
-            try:
-                user_agent = H['user-agent']
-            except KeyError, e:
-                print "Couldn't get user agent!"
+        try:
+            user_agent = H['user-agent']
+        except KeyError, e:
+            print "Couldn't get user agent!"
 
         if user_agent:
             print "User-Agent:  %s" % user_agent
 
-        self.do_HEAD()
+        self.do_HEAD(icy_client)
         # playlist = RiddimPlaylist()
         streamer = RiddimStreamer(self.request)
-        streamer.stream()
 
-class RiddimServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+        # mp3, MP3, mP3, Mp3 <-- why do people insist on 
+        # mixed-case filenames?
+        # FIXME
+        playlist = glob.glob(
+                os.path.join('/home/noah/gits/github/riddim/mp3',
+                    '*.[mM][pP]3'))
+        playlist.sort()
+        for file in playlist:
+            streamer.stream(file,icy_client)
+
+class RiddimServer(BaseHTTPServer.HTTPServer):
     def __init__(self,addr):
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)
