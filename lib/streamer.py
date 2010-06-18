@@ -1,5 +1,3 @@
-import os
-import glob
 import time
 import errno
 import socket
@@ -10,6 +8,7 @@ class RiddimStreamer:
 
     def __init__(self,request):
         self.request = request
+        self.byte_count = 0
 
     #  It's always a good day for smoking crack at winamp, inc.
     #
@@ -21,65 +20,60 @@ class RiddimStreamer:
 
     def get_meta(self):
         # lifted from amarok
-        META = "%cStreamTitle='%s';StreamUrl='%s';%s"
-        PADDING = '\x00' * 16
+        metadata = "%cStreamTitle='%s';StreamUrl='%s';%s"
+        padding = '\x00' * 16
         if self.dirty_meta:
             stream_title = str(self.mp3)
             # TODO lib/config.py
             stream_url = "http://downbe.at/"
 
-            # 28 is the number of static characters in META (!)
+            # 28 is the number of static characters in metadata (!)
             length = len(stream_title) + len(stream_url) + 28
-            padding = 16 - length % 16
-            meta = META % ((length + padding)/16, stream_title, stream_url, PADDING[:padding])
+            pad = 16 - length % 16
+            meta = metadata % (((length+pad)/16),stream_title,stream_url,padding[:pad])
             self.dirty_meta = False
             return meta
         else:
             return '\x00'
 
-    def stream(self):
-        # mp3, MP3, mP3, Mp3 <-- why do people insist on 
-        # mixed-case filenames?
-        # FIXME
-        playlist = glob.glob(
-                os.path.join('/home/noah/gits/github/riddim/mp3',
-                    '*.[mM][pP]3'))  
+    def stream(self,path,icy_client=False):
+        self.mp3 = RiddimMP3(path)
+        print 'streaming %s' % self.mp3
+
+        # main loop, lifted from amarok
+        buffer = 0
         buffer_size = 4096
-        META_INTERVAL = 16384
+        metadata_interval = 16384
 
-        for path in playlist:
-            self.mp3 = RiddimMP3(path)
-            print 'streaming %s ' % self.mp3
+        f = file(path, 'r')
+        f.seek(self.mp3.start())
+        self.dirty_meta = True
+        mp3_size = self.mp3.size()
+        while f.tell() < mp3_size:
+            bytes_until_meta = (metadata_interval - self.byte_count)
+            print "%s bytes_until_meta" % bytes_until_meta
+            if bytes_until_meta == 0:
+                if icy_client:
+                    meta = self.get_meta()
+                    self.request.send(meta)
+                    print "sent %s (len:  %s)" % (meta,len(meta))
+                self.byte_count = 0
+            else:
+                if bytes_until_meta < buffer_size:
+                    n_bytes = bytes_until_meta
+                else:
+                    n_bytes = buffer_size
 
-            # main loop, lifted from amarok
-            f = open(path, 'r')
-            f.seek(self.mp3.start())
-            try:
-                byte_count = 0
-                self.dirty_meta = True
-                while f.tell() < self.mp3.size() and True:
-                    bytes_until_meta = META_INTERVAL - byte_count
-                    if bytes_until_meta == 0:
-                        self.request.send(self.get_meta())
-                        byte_count = 0
-                    else:
-                        if bytes_until_meta < buffer_size:
-                            n_bytes = bytes_until_meta
-                        else:
-                            n_bytes = buffer_size
-
-                        buffer = f.read(n_bytes)
-                        self.request.send(buffer)
-                        byte_count += len(buffer)
-
-                self.dirty_meta = True
-            #except socket.error, e:
-            #    print "Uh oh, socket error"
-            #    print e
-            except IOError, e:
-                if e.errno == errno.EPIPE:
-                    print "client disconnected"
-                    print e
-                print e
-            f.close()
-        return
+                buffer = f.read(n_bytes)
+                self.request.send(buffer)
+                self.byte_count += len(buffer)
+        self.dirty_meta = True
+        #except socket.error, e:
+        #    print "Uh oh, socket error"
+        #    print e
+        #except IOError, e:
+        #    if e.errno == errno.EPIPE:
+        #        print "client disconnected"
+        #        print e
+        #    print e
+    #return
