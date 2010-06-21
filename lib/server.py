@@ -3,11 +3,13 @@ import glob
 import socket
 import SocketServer # see:  http://docs.python.org/library/socketserver.html
 import BaseHTTPServer
+import SimpleXMLRPCServer
 
 #import RiddimPlaylist
 from lib.streamer import RiddimStreamer
 
-class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
+        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
     def do_HEAD(self,icy_client):
         if icy_client:
@@ -38,7 +40,30 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # User-Agent: xmlrpclib.py/1.0.1 (by www.pythonware.com)
         # Content-Type: text/xml
         # Content-Length: 112
-        pass
+
+        try:
+            data = self.rfile.read(int(self.headers["content-length"]))
+            response = self.server._marshaled_dispatch(data, getattr(self, '_dispatch', None))
+        except: # This should only happen if the module is buggy
+            # internal error, report as HTTP server error
+            log.exception("Got exception calling xmlrpc marsheller")
+            log.error("BAD XML CODE:\n%s", data)
+            self.send_response(500)
+            self.end_headers()
+        else:
+            # got a valid XML RPC response
+            self.send_response(200)
+            #if len(response) > 1024 and self.headers.has_key("accept-encoding") and self.headers["accept-encoding"].find("gzip") != -1:
+            #    log.debug("xmlrpc", "Client indicated it can handle GZIP. Lets do it")
+            #    response = zlib.compress(response, 6)
+            #   self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-type", "text/xml")
+            self.send_header("Content-length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+            # shut down the connection
+            self.wfile.flush()
+            self.connection.shutdown(1)
 
     def do_GET(self):
         # Potential client candidates:
@@ -105,4 +130,5 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer):
     def __init__(self,addr):
+        self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)
