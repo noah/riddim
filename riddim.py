@@ -7,6 +7,7 @@ from lib.daemonize import daemonize
 from lib.options import RiddimOptions
 from lib.client import RiddimClient
 from lib.server import RiddimServer
+from lib.xmlrpc import RiddimXMLRPCRegisters
 
 class Riddim:
     def __init__(self):
@@ -23,6 +24,7 @@ class Riddim:
                 time.sleep(0.001)
                 riddim_server = RiddimServer(('0.0.0.0',int(port)))
                 ip, port = riddim_server.server_address
+                riddim_server.register_instance(RiddimXMLRPCRegisters(riddim_server))
                 riddim_server_thread = threading.Thread(
                         target=riddim_server.serve_forever)
                 riddim_server_thread.setDaemon(False)
