@@ -36,43 +36,46 @@ class RiddimStreamer:
         else:
             return '\x00'
 
-    def stream(self,path,icy_client=False):
-        self.mp3 = RiddimMP3(path)
-        print 'streaming %s' % self.mp3
+    def stream(self,playlist,icy_client=False):
+        for path in playlist:
+            self.mp3 = RiddimMP3(path)
+            print 'streaming %s' % self.mp3
 
-        try:
-            # main loop, lifted from amarok
-            buffer = 0
-            buffer_size = 4096
-            metadata_interval = 16384
+            try:
+                # loop lifted from amarok
+                buffer              = 0
+                buffer_size         = 4096
+                metadata_interval   = 16384
 
-            f = file(path, 'r')
-            f.seek(self.mp3.start())
-            self.dirty_meta = True
-            mp3_size = self.mp3.size()
-            while f.tell() < mp3_size:
-                bytes_until_meta = (metadata_interval - self.byte_count)
-                if bytes_until_meta == 0:
-                    if icy_client:
-                        meta = self.get_meta()
-                        self.request.send(meta)
-                    self.byte_count = 0
-                else:
-                    if bytes_until_meta < buffer_size:
-                        n_bytes = bytes_until_meta
+                f = file(path, 'r')
+                f.seek(self.mp3.start())
+                self.dirty_meta = True
+                mp3_size = self.mp3.size()
+                while f.tell() < mp3_size:
+                    bytes_until_meta = (metadata_interval - self.byte_count)
+                    if bytes_until_meta == 0:
+                        if icy_client:
+                            meta = self.get_meta()
+                            self.request.send(meta)
+                        self.byte_count = 0
                     else:
-                        n_bytes = buffer_size
+                        if bytes_until_meta < buffer_size:
+                            n_bytes = bytes_until_meta
+                        else:
+                            n_bytes = buffer_size
 
-                    buffer = f.read(n_bytes)
-                    self.request.send(buffer)
-                    self.byte_count += len(buffer)
-            self.dirty_meta = True
-        #except socket.error, e:
-        #    print "Uh oh, socket error"
-        #    print e
-        except IOError, e:
-            if e.errno == errno.EPIPE:
-                print "client disconnected"
-                print e
-            print e
+                        buffer = f.read(n_bytes)
+                        self.request.send(buffer)
+                        self.byte_count += len(buffer)
+                self.dirty_meta = True
+            #except socket.error, e:
+            #    print "Uh oh, socket error"
+            #    print e
+            except IOError, e:
+                if e.errno == errno.EPIPE:
+                    print "Broken pipe"
+                elif e.errno == errno.ECONNRESET:
+                    print "Connection reset by peer"
+                else:
+                    print errno.errorcode[e.errno]
     #return

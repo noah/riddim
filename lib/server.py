@@ -119,14 +119,13 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
         streamer = RiddimStreamer(self.request)
 
         # mp3, MP3, mP3, Mp3 <-- why do people insist on 
-        # mixed-case filenames?
+        # using mixed-case filenames?
         # FIXME
         playlist = glob.glob(
                 os.path.join('/home/noah/gits/github/riddim/mp3',
                     '*.[mM][pP]3'))
         playlist.sort()
-        for file in playlist:
-            streamer.stream(file,icy_client)
+        streamer.stream(playlist,icy_client)
 
 class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer):
     def __init__(self,addr):
