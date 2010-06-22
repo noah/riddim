@@ -5,10 +5,12 @@ import socket
 from lib.mp3 import RiddimMP3
 
 class RiddimStreamer:
-
+    __state = {}
     def __init__(self,request):
+        self.__dict__ = self.__state
         self.request = request
         self.byte_count = 0
+        self.__state['status'] = 'playing'
 
     #  It's always a good day for smoking crack at Nullsoft!
     #
@@ -36,10 +38,10 @@ class RiddimStreamer:
         else:
             return '\x00'
 
-    def stream(self,playlist,icy_client=False):
-        for path in playlist:
-            self.mp3 = RiddimMP3(path)
-            print 'streaming %s' % self.mp3
+    def stream(self,path,icy_client=False):
+        self.mp3 = RiddimMP3(path)
+        print 'streaming %s' % self.mp3
+        self.__state['status'] = 'playing'
 
             try:
                 # loop lifted from amarok

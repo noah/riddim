@@ -4,7 +4,6 @@ Synopsis
         % ./riddim.py -k start
 
 Todo
-        * Global configuration class
         * Playlist management
         * Some kind of RPC for state management
         * Auth

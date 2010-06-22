@@ -1,39 +1,42 @@
 import os
 import glob
 import socket
-import SocketServer # see:  http://docs.python.org/library/socketserver.html
+import SocketServer
 import BaseHTTPServer
 import SimpleXMLRPCServer
 
-#import RiddimPlaylist
+from lib.config import RiddimConfig
 from lib.streamer import RiddimStreamer
 
-class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
-        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
+class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
     def do_HEAD(self,icy_client):
         if icy_client:
             self.send_response(200,"ICY")
+            config = RiddimConfig(os.getcwd()).config
+            # fixme verbose
             headers = {
-                'icy-notice1'   : '<BR>Riddim<BR>',
-                'icy-notice2'   : 'riddim-server<BR>',
-                'icy-name'      : 'riddim on %s' % socket.gethostname(),
-                'icy-genre'     : 'unknown',
-                'icy-url'       : 'http://github.com/noah/riddim',
-                'content-type'  : 'audio/mpeg',
-                'icy-pub'       : 0,
+                'icy-notice1'   : config.get('icy','notice1'),
+                'icy-notice2'   : config.get('icy','notice2'),
+                'icy-name'      : config.get('icy','name',0,
+                                    {'hostname': socket.gethostname()}),
+                'icy-genre'     : config.get('icy','genre'),
+                'icy-url'       : config.get('icy','url'),
+                'icy-pub'       : config.getboolean('icy','pub'),
                 #'icy-br'        : 128,
-                'icy-metaint'   : 16384
+                'icy-metaint'   : config.getint('icy','metaint'),
+                'content-type'  : config.get('icy','content_type')
             }
             for k,v, in headers.iteritems():
                 self.send_header(k,v)
         else:
             self.send_response(200)
             self.send_header('Content-Type', 'audio/x-mpegurl')
-            self.end_headers()
         self.end_headers()
 
     def do_POST(self):
+        # Handle xmlrpc requests
+
         """ xmlrpclib """
         # POST /RPC2 HTTP/1.0
         # Host: downbe.at:18944
@@ -42,31 +45,27 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
         # Content-Length: 112
 
         try:
-            data = self.rfile.read(int(self.headers["content-length"]))
-            response = self.server._marshaled_dispatch(data, getattr(self, '_dispatch', None))
-        except: # This should only happen if the module is buggy
-            # internal error, report as HTTP server error
-            log.exception("Got exception calling xmlrpc marsheller")
-            log.error("BAD XML CODE:\n%s", data)
+            content_len = int(self.headers["content-length"])
+            data = self.rfile.read(content_len)
+            response = self.server._marshaled_dispatch(data,
+                    getattr(self, '_dispatch', None))
+        except:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             self.send_response(500)
             self.end_headers()
         else:
             # got a valid XML RPC response
             self.send_response(200)
-            #if len(response) > 1024 and self.headers.has_key("accept-encoding") and self.headers["accept-encoding"].find("gzip") != -1:
-            #    log.debug("xmlrpc", "Client indicated it can handle GZIP. Lets do it")
-            #    response = zlib.compress(response, 6)
-            #   self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-type", "text/xml")
-            self.send_header("Content-length", str(len(response)))
+            self.send_header('Content-type','text/xml')
+            self.send_header('Content-length',str(len(response)))
             self.end_headers()
             self.wfile.write(response)
-            # shut down the connection
             self.wfile.flush()
             self.connection.shutdown(1)
 
     def do_GET(self):
-        # Potential client candidates:
+        # Client candidates:
 
         """ cmus """
         # GET / HTTP/1.0
@@ -97,6 +96,7 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
         # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN; utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
         # Icy-Metadata: 1
 
+        self.streamer = RiddimStreamer(self.request)
 
         H = self.headers
         icy_client = False
@@ -116,7 +116,6 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
 
         self.do_HEAD(icy_client)
         # playlist = RiddimPlaylist()
-        streamer = RiddimStreamer(self.request)
 
         # mp3, MP3, mP3, Mp3 <-- why do people insist on 
         # using mixed-case filenames?
@@ -125,9 +124,11 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
                 os.path.join('/home/noah/gits/github/riddim/mp3',
                     '*.[mM][pP]3'))
         playlist.sort()
-        streamer.stream(playlist,icy_client)
+        for file in playlist:
+            self.streamer.stream(file,icy_client)
 
-class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer):
+class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer,SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
     def __init__(self,addr):
         self.allow_reuse_address = 1
+        SimpleXMLRPCServer.SimpleXMLRPCDispatcher.__init__(self,allow_none=True)
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)

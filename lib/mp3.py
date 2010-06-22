@@ -36,7 +36,8 @@ class RiddimMP3:
         # lifted from amarok
         f = open(self.path, 'r')
         id3 = f.read(3)
-        if not id3=="ID3": return 0
+        if not id3 == "ID3":
+            return 0
         f.seek(6)
         l = f.read(4)
         start = eyeD3.binfuncs.bin2dec(eyeD3.binfuncs.bytes2bin(l, 7)) + 10
