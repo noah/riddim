@@ -15,9 +15,9 @@ class Riddim(object):
         cwd = os.getcwd()
         self.config = RiddimConfig(cwd).config
         # FIXME config
-        var_dir = os.path.join(cwd,'var')
-        self.logfile = os.path.join(var_dir,self.config.get('riddim','logfile'))
-        self.pidfile = os.path.join(var_dir,self.config.get('riddim','pidfile'))
+        run_dir = os.path.join(cwd,'var','run')
+        self.logfile = os.path.join(run_dir,self.config.get('riddim','logfile'))
+        self.pidfile = os.path.join(run_dir,self.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
 
     def start_server(self,port):
