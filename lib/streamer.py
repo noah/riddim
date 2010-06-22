@@ -3,21 +3,17 @@ import errno
 import socket
 
 from lib.mp3 import RiddimMP3
+from lib.config import RiddimConfig
 
-class RiddimStreamer:
-    __state = {}
+class RiddimStreamer(object):
     def __init__(self,request):
-        self.__dict__ = self.__state
+        self.config = RiddimConfig
         self.request = request
         self.byte_count = 0
-        self.__state['status'] = 'playing'
 
-    #  It's always a good day for smoking crack at Nullsoft!
-    #
-    # See amarok for ideas on the (crappy) icecast metadata "protocol"
-    # http://www.google.com/codesearch/p?hl=en#bor5KmW_n7E/pub/freeware/KDE/SOURCES/IA32AMD32/amarok-1.3.5.S10X86.SS10.tar.bz2%7CBIlNJDe3jFE/amarok-1.3.5/amarok/src/scripts/shouter/Services.py&q=ICYRESP&exact_package=ftp://ftp.sunfreeware.com/pub/freeware/KDE/SOURCES/IA32AMD32/amarok-1.3.5.S10X86.SS10.tar.bz2&l=118
-    #
-    # see this for an explantion of the whole cockamamie thing:
+    # ~ It's always a good day for smoking crack at Nullsoft!
+    # ~ See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
+    # ~ This explains the whole cockamamie thing:
     #   http://www.smackfu.com/stuff/programming/shoutcast.html
 
     def get_meta(self):
@@ -26,8 +22,7 @@ class RiddimStreamer:
         padding = '\x00' * 16
         if self.dirty_meta:
             stream_title = str(self.mp3)
-            # TODO lib/config.py
-            stream_url = "http://downbe.at/"
+            stream_url = self.config.get('riddim','url')
 
             # 28 is the number of static characters in metadata (!)
             length = len(stream_title) + len(stream_url) + 28
@@ -41,13 +36,12 @@ class RiddimStreamer:
     def stream(self,path,icy_client=False):
         self.mp3 = RiddimMP3(path)
         print 'streaming %s' % self.mp3
-        self.__state['status'] = 'playing'
 
         try:
             # loop lifted from amarok
             buffer              = 0
             buffer_size         = 4096
-            metadata_interval   = 16384
+            metadata_interval   = self.config.getint('icy','metaint')
 
             f = file(path, 'r')
             f.seek(self.mp3.start())
@@ -57,8 +51,7 @@ class RiddimStreamer:
                 bytes_until_meta = (metadata_interval - self.byte_count)
                 if bytes_until_meta == 0:
                     if icy_client:
-                        meta = self.get_meta()
-                        self.request.send(meta)
+                        self.request.send(self.get_meta())
                     self.byte_count = 0
                 else:
                     if bytes_until_meta < buffer_size:

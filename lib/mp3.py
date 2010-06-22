@@ -13,7 +13,7 @@ except:
     import sys
     sys.exit(0)
 
-class RiddimMP3:
+class RiddimMP3(object):
 
     def __init__(self,path):
         self.path = path

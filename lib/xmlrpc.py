@@ -1,4 +1,4 @@
-class RiddimXMLRPCRegisters:
+class RiddimXMLRPCRegisters(object):
 
     def __init__(self,server):
         self.server = server

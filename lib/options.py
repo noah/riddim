@@ -4,7 +4,7 @@ from optparse import OptionParser
 
 from lib.config import RiddimConfig
 
-class RiddimOptions:
+class RiddimOptions(object):
     def __init__(self):
         self.config = RiddimConfig(os.getcwd()).config
         self.op = OptionParser()
