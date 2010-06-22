@@ -43,41 +43,41 @@ class RiddimStreamer:
         print 'streaming %s' % self.mp3
         self.__state['status'] = 'playing'
 
-            try:
-                # loop lifted from amarok
-                buffer              = 0
-                buffer_size         = 4096
-                metadata_interval   = 16384
+        try:
+            # loop lifted from amarok
+            buffer              = 0
+            buffer_size         = 4096
+            metadata_interval   = 16384
 
-                f = file(path, 'r')
-                f.seek(self.mp3.start())
-                self.dirty_meta = True
-                mp3_size = self.mp3.size()
-                while f.tell() < mp3_size:
-                    bytes_until_meta = (metadata_interval - self.byte_count)
-                    if bytes_until_meta == 0:
-                        if icy_client:
-                            meta = self.get_meta()
-                            self.request.send(meta)
-                        self.byte_count = 0
-                    else:
-                        if bytes_until_meta < buffer_size:
-                            n_bytes = bytes_until_meta
-                        else:
-                            n_bytes = buffer_size
-
-                        buffer = f.read(n_bytes)
-                        self.request.send(buffer)
-                        self.byte_count += len(buffer)
-                self.dirty_meta = True
-            #except socket.error, e:
-            #    print "Uh oh, socket error"
-            #    print e
-            except IOError, e:
-                if e.errno == errno.EPIPE:
-                    print "Broken pipe"
-                elif e.errno == errno.ECONNRESET:
-                    print "Connection reset by peer"
+            f = file(path, 'r')
+            f.seek(self.mp3.start())
+            self.dirty_meta = True
+            mp3_size = self.mp3.size()
+            while f.tell() < mp3_size:
+                bytes_until_meta = (metadata_interval - self.byte_count)
+                if bytes_until_meta == 0:
+                    if icy_client:
+                        meta = self.get_meta()
+                        self.request.send(meta)
+                    self.byte_count = 0
                 else:
-                    print errno.errorcode[e.errno]
+                    if bytes_until_meta < buffer_size:
+                        n_bytes = bytes_until_meta
+                    else:
+                        n_bytes = buffer_size
+
+                    buffer = f.read(n_bytes)
+                    self.request.send(buffer)
+                    self.byte_count += len(buffer)
+            self.dirty_meta = True
+        #except socket.error, e:
+        #    print "Uh oh, socket error"
+        #    print e
+        except IOError, e:
+            if e.errno == errno.EPIPE:
+                print "Broken pipe"
+            elif e.errno == errno.ECONNRESET:
+                print "Connection reset by peer"
+            else:
+                print errno.errorcode[e.errno]
     #return
