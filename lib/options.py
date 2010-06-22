@@ -1,12 +1,17 @@
+import os
 import re
 from optparse import OptionParser
 
+from lib.config import RiddimConfig
+
 class RiddimOptions:
     def __init__(self):
+        self.config = RiddimConfig(os.getcwd()).config
         self.op = OptionParser()
         self.op.disable_interspersed_args() # unix-style
         self.op.add_option('-k','--signal',help='signal stop/start/status')
-        self.op.add_option('-P','--port',default=18944,help='port number to try')
+        # FIXME config
+        self.op.add_option('-P','--port',default=self.config.get('riddim','port'),help='port number to try')
         self.flags = {
                 # server booleans
                 '-p' : ['--play',       'start playback'],

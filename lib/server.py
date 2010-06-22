@@ -1,36 +1,37 @@
 import os
 import glob
 import socket
-import SocketServer # see:  http://docs.python.org/library/socketserver.html
+import SocketServer
 import BaseHTTPServer
 import SimpleXMLRPCServer
-import xmlrpclib
 
-#import RiddimPlaylist
+from lib.config import RiddimConfig
 from lib.streamer import RiddimStreamer
 
-class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler, SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
+class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
     def do_HEAD(self,icy_client):
         if icy_client:
             self.send_response(200,"ICY")
+            config = RiddimConfig(os.getcwd()).config
+            # fixme verbose
             headers = {
-                'icy-notice1'   : '<BR>Riddim<BR>',
-                'icy-notice2'   : 'riddim-server<BR>',
-                'icy-name'      : 'riddim on %s' % socket.gethostname(),
-                'icy-genre'     : 'unknown',
-                'icy-url'       : 'http://github.com/noah/riddim',
-                'content-type'  : 'audio/mpeg',
-                'icy-pub'       : 0,
+                'icy-notice1'   : config.get('icy','notice1'),
+                'icy-notice2'   : config.get('icy','notice2'),
+                'icy-name'      : config.get('icy','name',0,
+                                    {'hostname': socket.gethostname()}),
+                'icy-genre'     : config.get('icy','genre'),
+                'icy-url'       : config.get('icy','url'),
+                'icy-pub'       : config.getboolean('icy','pub'),
                 #'icy-br'        : 128,
-                'icy-metaint'   : 16384
+                'icy-metaint'   : config.getint('icy','metaint'),
+                'content-type'  : config.get('icy','content_type')
             }
             for k,v, in headers.iteritems():
                 self.send_header(k,v)
         else:
             self.send_response(200)
             self.send_header('Content-Type', 'audio/x-mpegurl')
-            self.end_headers()
         self.end_headers()
 
     def do_POST(self):
@@ -128,7 +129,6 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler, SimpleXM
 
 class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer,SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
     def __init__(self,addr):
-        self.streamer = None
         self.allow_reuse_address = 1
         SimpleXMLRPCServer.SimpleXMLRPCDispatcher.__init__(self,allow_none=True)
         SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)

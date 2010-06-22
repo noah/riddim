@@ -2,18 +2,22 @@ import os
 import sys
 import time
 import threading
-
 from lib.daemonize import daemonize
+
+from lib.config import RiddimConfig
 from lib.options import RiddimOptions
-from lib.client import RiddimClient
 from lib.server import RiddimServer
 from lib.xmlrpc import RiddimXMLRPCRegisters
 
-class Riddim:
+class Riddim(object):
     def __init__(self):
-        self.cwd = os.getcwd()
-        self.logfile = os.path.join(self.cwd,'riddim.log')
-        self.pidfile = os.path.join(self.cwd,'riddim.pid')
+
+        cwd = os.getcwd()
+        self.config = RiddimConfig(cwd).config
+        # FIXME config
+        var_dir = os.path.join(cwd,'var')
+        self.logfile = os.path.join(var_dir,self.config.get('riddim','logfile'))
+        self.pidfile = os.path.join(var_dir,self.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
 
     def start_server(self,port):
@@ -22,8 +26,9 @@ class Riddim:
         for retry in range(1, (int(5 * MINUTE) / INTERVAL)):
             try:
                 time.sleep(0.001)
-                riddim_server = RiddimServer(('0.0.0.0',int(port)))
-                ip, port = riddim_server.server_address
+                address = ('0.0.0.0',int(port))
+                riddim_server = RiddimServer(address)
+                ip,port = riddim_server.server_address
                 riddim_server.register_instance(RiddimXMLRPCRegisters(riddim_server))
                 riddim_server_thread = threading.Thread(
                         target=riddim_server.serve_forever)
@@ -40,11 +45,6 @@ class Riddim:
                 time.sleep(INTERVAL)
         return (riddim_server, riddim_server_thread)
 
-    def hello(self):
-        print """
-            RiDDiM
-        """
-
     def pid(self):
         try:
             return open(self.pidfile,'r').read().strip()
@@ -55,9 +55,10 @@ class Riddim:
         pid = self.pid()
         if pid:
             print "RiDDiM already running;  PID:  %s" % pid
-            print "If you think RiDDiM is not running, delete riddim.pid"
+            print "If you think RiDDiM is not running, delete %s" % self.config.get('riddim','pidfile')
             sys.exit()
         else:
+            # FIXME hardcoded
             print "RiDDiM running on http://localhost:%s" % self.o.port
             if not self.o.foreground:
                 daemonize(stderr=self.logfile,stdout=self.logfile)
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     
     riddim = Riddim()
     if riddim.o.signal == 'start':     riddim.start()
-    if riddim.o.signal == "stop":      riddim.stop()
+    if riddim.o.signal == 'stop':      riddim.stop()
     if riddim.o.signal == 'restart':   riddim.stop(); riddim.start();
     if riddim.o.signal == 'status':    riddim.status()
 
