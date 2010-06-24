@@ -4,9 +4,72 @@ import fnmatch
 import itertools
 
 from lib.data import RiddimData
+class RiddimRPCRegisters(object):
+    """ 
+        These are the commands that the local server accepts via XMLRPC
+        from remote clients
+    """
+
+    def __init__(self,server):
+        self.server = server
+        self.data = RiddimData()
+
+    def query(self):
+        return """
+%s:  %s
+%s
+%s
+""" %   ( 
+        self.status(),
+        self.song(),
+        20 * '*',
+        self.playlist(),
+        )
+
+    def playlist(self):
+        index = self.data['index']
+        pl = eval(self.data['playlist']).keys()
+        new_pl = []
+        for i in range(len(pl)):
+            leader = " " if int(i) != int(index) else "*"
+            new_pl.append(''.join([leader,pl[i]]))
+        return "\n".join(new_pl)
+
+    def clear(self):
+        self.data['playlist'] = '{}'
+
+    def song(self):
+        return self.data['song']
+    
+    def status(self):
+        return self.data['status']
+
+    def stop(self):
+        self.data['status'] = 'stopped'
+
+    def play(self):
+        self.data['status'] = 'playing'
+
+    def pause(self):
+        self.data['status'] = 'paused'
 
 class RiddimRPCClient(object):
     """ XMLRPC client wrappers """
+
+    def query(self):
+        return self.rpc.query()
+
+    def clear(self):
+        return self.rpc.clear()
+
+    def stop(self):
+        return self.rpc.stop()
+
+    def pause(self):
+        return self.rpc.pause()
+
+    def play(self):
+        return self.rpc.play()
 
     def enqueue_list(self,path):
         results = []
@@ -30,43 +93,3 @@ class RiddimRPCClient(object):
             playlist[path] = {}
         self.data['playlist'] = playlist
 
-
-    def query(self):
-        return self.rpc.query()
-
-    def clear(self):
-        return self.rpc.clear()
-
-
-class RiddimRPCRegisters(object):
-    """ The commands that the server accepts via XMLRPC"""
-
-    def __init__(self,server):
-        self.server = server
-        self.data = RiddimData()
-
-    def query(self):
-        return """
-%s:  %s
-%s
-%s
-""" %   ( 
-        self.status(),
-        self.song(),
-        20 * '*',
-        self.playlist(),
-        )
-
-    def playlist(self):
-        pl = eval(self.data['playlist'])
-        paths = pl.keys()
-        return sorted(paths)
-
-    def clear(self):
-        self.data['playlist'] = '{}'
-
-    def song(self):
-        return self.data['song']
-    
-    def status(self):
-        return self.data['status']
