@@ -1,7 +1,5 @@
 import os
 
-# TODO
-#   make this not suck
 try:
     import eyeD3
 except:
@@ -25,9 +23,16 @@ class RiddimMP3(object):
         return eyeD3.Mp3AudioFile(self.path).getBitRate()[1]
 
     def tags(self):
-        tag = eyeD3.Tag()
-        tag.link(self.path)
-        return tag.getArtist(),tag.getTitle()
+        artist = title = ""
+        try:
+            tag = eyeD3.Tag()
+            tag.link(self.path)
+            artist = tag.getArtist()
+            title = tag.getTitle()
+        except eyeD3.TagException:
+            print "Couldn't parse tags for %s" % self.path
+
+        return artist,title
 
     def size(self):
         return os.stat(self.path)[6]
@@ -40,6 +45,6 @@ class RiddimMP3(object):
             return 0
         f.seek(6)
         l = f.read(4)
-        start = eyeD3.binfuncs.bin2dec(eyeD3.binfuncs.bytes2bin(l, 7)) + 10
+        start = eyeD3.binfuncs.bin2dec(eyeD3.binfuncs.bytes2bin(l,7)) + 10
         f.close()
         return start
