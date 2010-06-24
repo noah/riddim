@@ -46,12 +46,14 @@ class RiddimStreamer(object):
                 print "Playlist empty"
                 return
             I = int(self.data['index'])
-            if I is None: 
-                I = 0
-            else:
-                I += 1
-            print "index is %s " % I
-            path = playlist[I]
+            if I is None: I = 0
+
+            try:
+                path = playlist[I]
+            except IndexError:
+                print "No song at index %s" % I
+                return
+
             self.mp3 = RiddimMP3(path)
             print 'streaming %s' % self.mp3
             self.data['status'] = 'playing'
@@ -84,6 +86,8 @@ class RiddimStreamer(object):
                         self.request.send(buffer)
                         self.byte_count += len(buffer)
                 self.dirty_meta = True
+                idx = int(self.data['index'])
+                self.data['index'] = idx + 1
             except IOError, e:
                 self.data['status'] = 'stopped'
                 self.data['song'] = ''
