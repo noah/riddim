@@ -44,7 +44,7 @@ class RiddimCLI(RiddimRPCClient):
                 self.data['hostname'] = self.ip
                 self.data['song'] = ''
                 self.data['status'] = 'stopped'
-                if self.data['index'] is None: self.data['index'] = 0
+                self.data['index'] = 0
                 if self.data['playlist'] is None: self.data['playlist'] = {}
                 break
             # FIXME make this not suck at error handling
