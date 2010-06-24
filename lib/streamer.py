@@ -1,3 +1,4 @@
+import os
 import time
 import errno
 import socket
@@ -7,7 +8,7 @@ from lib.config import RiddimConfig
 
 class RiddimStreamer(object):
     def __init__(self,request):
-        self.config = RiddimConfig
+        self.config = RiddimConfig(os.getcwd()).config
         self.request = request
         self.byte_count = 0
 
