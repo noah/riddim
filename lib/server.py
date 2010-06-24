@@ -115,17 +115,7 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
             print "User-Agent:  %s" % user_agent
 
         self.do_HEAD(icy_client)
-        # playlist = RiddimPlaylist()
-
-        # mp3, MP3, mP3, Mp3 <-- why do people insist on 
-        # using mixed-case filenames?
-        # FIXME
-        playlist = glob.glob(
-                os.path.join('/home/noah/gits/github/riddim/mp3',
-                    '*.[mM][pP]3'))
-        playlist.sort()
-        for file in playlist:
-            self.streamer.stream(file,icy_client)
+        self.streamer.stream(icy_client)
 
 class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer,SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
     def __init__(self,addr):

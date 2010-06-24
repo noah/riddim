@@ -2,16 +2,18 @@ import os
 import sys
 import time
 import threading
-from lib.daemonize import daemonize
+import xmlrpclib
 
+from lib.daemonize import daemonize
+from lib.data import RiddimData
 from lib.config import RiddimConfig
 from lib.options import RiddimOptions
 from lib.server import RiddimServer
-from lib.xmlrpc import RiddimXMLRPCRegisters
+from lib.xmlrpc import RiddimRPCRegisters, RiddimRPCClient
 
-class Riddim(object):
+class RiddimCLI(RiddimRPCClient):
     def __init__(self):
-
+        self.data = RiddimData()
         cwd = os.getcwd()
         self.config = RiddimConfig(cwd).config
         # FIXME config
@@ -19,7 +21,9 @@ class Riddim(object):
         self.pidfile = os.path.join(cwd,'var','run',self.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
 
-    def start_server(self,port):
+        self.rpc = xmlrpclib.ServerProxy('http://%s:%s' % (self.data['hostname'],self.data['port']), allow_none=True)
+
+    def kickoff(self,port):
         MINUTE=60
         INTERVAL=2
         for retry in range(1, (int(5 * MINUTE) / INTERVAL)):
@@ -27,14 +31,21 @@ class Riddim(object):
                 time.sleep(0.001)
                 address = ('0.0.0.0',int(port))
                 riddim_server = RiddimServer(address)
-                ip,port = riddim_server.server_address
-                riddim_server.register_instance(RiddimXMLRPCRegisters(riddim_server))
+                self.ip,self.port = riddim_server.server_address
+                riddim_server.register_instance(RiddimRPCRegisters(riddim_server))
                 riddim_server_thread = threading.Thread(
                         target=riddim_server.serve_forever)
                 riddim_server_thread.setDaemon(False)
                 riddim_server_thread.start()
                 print("RiddimServer running at http://%s:%s, in thread:%s" %
-                        (ip,str(port),riddim_server_thread.getName()))
+                        (self.ip,str(self.port),riddim_server_thread.getName()))
+                self.data['started_on'] = time.time()
+                self.data['port'] = self.port
+                self.data['hostname'] = self.ip
+                self.data['song'] = ''
+                self.data['status'] = 'stopped'
+                if self.data['index'] is None: self.data['index'] = 0
+                if self.data['playlist'] is None: self.data['playlist'] = {}
                 break
             # FIXME make this not suck at error handling
             # socket busy OK; permission denied (low port) NOT
@@ -57,15 +68,17 @@ class Riddim(object):
             print "If you think RiDDiM is not running, delete %s" % self.config.get('riddim','pidfile')
             sys.exit()
         else:
-            # FIXME hardcoded
-            print "RiDDiM running on http://localhost:%s" % self.o.port
             if not self.o.foreground:
                 daemonize(stderr=self.logfile,stdout=self.logfile)
             pid = os.getpid()
             print "forked, PID: %d" % pid
             open(self.pidfile,'w').write(str(pid))
 
-        server, thread = self.start_server(self.o.port)
+        port = self.o.port
+        if port is None:
+            port=18944
+        server,thread = self.kickoff(port)
+        sys.exit(0)
 
     def stop(self):
         pid = self.pid()
@@ -77,20 +90,37 @@ class Riddim(object):
                 print "killed %s" % pid
             except OSError: # already died
                 pass
+        self.quit()
+
+    def quit(self):
         print "RiDDiM is stopped."
+        sys.exit(0)
 
     def status(self):
         pid = self.pid()
         print "RiDDiM running;  PID:  %s " % pid if pid else "RiDDiM not running"
+        sys.exit(0)
+
 
 if __name__ == '__main__':
-    
-    riddim = Riddim()
-    if riddim.o.signal == 'start':     riddim.start()
-    if riddim.o.signal == 'stop':      riddim.stop()
-    if riddim.o.signal == 'restart':   riddim.stop(); riddim.start();
-    if riddim.o.signal == 'status':    riddim.status()
 
-    #    if riddim_options.flag:
-    #        #print "running %s flag" % riddim_options.flag
-    #        sys.exit(0)
+    cli = RiddimCLI()
+
+    # handle init signals
+    if cli.o.signal == 'start':     cli.start()
+    if cli.o.signal == 'stop':      cli.stop()
+    if cli.o.signal == 'restart':   cli.stop(); cli.start();
+    if cli.o.signal == 'status':    cli.status()
+
+    # handle flags
+    opts = cli.o.options
+    if cli.o.flag:
+        flag = cli.o.flag
+        if flag == 'enqueue':
+            cli.enqueue(opts.enqueue)
+        elif flag == 'query':
+            print cli.query()
+        elif flag == 'clear':
+            cli.clear()
+
+    sys.exit(0)

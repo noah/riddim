@@ -1,13 +1,17 @@
+import os
 import time
 import errno
 import socket
+import hashlib
 
 from lib.mp3 import RiddimMP3
+from lib.data import RiddimData
 from lib.config import RiddimConfig
 
 class RiddimStreamer(object):
     def __init__(self,request):
-        self.config = RiddimConfig
+        self.data = RiddimData()
+        self.config = RiddimConfig(os.getcwd()).config
         self.request = request
         self.byte_count = 0
 
@@ -34,43 +38,58 @@ class RiddimStreamer(object):
             return '\x00'
 
     def stream(self,path,icy_client=False):
-        self.mp3 = RiddimMP3(path)
-        print 'streaming %s' % self.mp3
-
-        try:
-            # loop lifted from amarok
-            buffer              = 0
-            buffer_size         = 4096
-            metadata_interval   = self.config.getint('icy','metaint')
-
-            f = file(path, 'r')
-            f.seek(self.mp3.start())
-            self.dirty_meta = True
-            mp3_size = self.mp3.size()
-            while f.tell() < mp3_size:
-                bytes_until_meta = (metadata_interval - self.byte_count)
-                if bytes_until_meta == 0:
-                    if icy_client:
-                        self.request.send(self.get_meta())
-                    self.byte_count = 0
-                else:
-                    if bytes_until_meta < buffer_size:
-                        n_bytes = bytes_until_meta
-                    else:
-                        n_bytes = buffer_size
-
-                    buffer = f.read(n_bytes)
-                    self.request.send(buffer)
-                    self.byte_count += len(buffer)
-            self.dirty_meta = True
-        #except socket.error, e:
-        #    print "Uh oh, socket error"
-        #    print e
-        except IOError, e:
-            if e.errno == errno.EPIPE:
-                print "Broken pipe"
-            elif e.errno == errno.ECONNRESET:
-                print "Connection reset by peer"
+        while 1:
+            playlist = sorted(eval(self.data['playlist']).keys())
+            from pprint import pprint 
+            pprint(playlist)
+            if playlist is None:
+                print "Playlist empty"
+                return
+            I = int(self.data['index'])
+            if I is None: 
+                I = 0
             else:
-                print errno.errorcode[e.errno]
-    #return
+                I += 1
+            print "index is %s " % I
+            path = playlist[I]
+            self.mp3 = RiddimMP3(path)
+            print 'streaming %s' % self.mp3
+            self.data['status'] = 'playing'
+            self.data['song'] = self.mp3
+            self.data['index'] = str(I)
+
+            try:
+                # this loop gets its ideas about the shoutcast protocol from amarok
+                buffer              = 0
+                buffer_size         = 4096
+                metadata_interval   = self.config.getint('icy','metaint')
+                f = file(path, 'r')
+                f.seek(self.mp3.start())
+
+                self.dirty_meta = True
+                mp3_size = self.mp3.size()
+                while f.tell() < mp3_size:
+                    bytes_until_meta = (metadata_interval - self.byte_count)
+                    if bytes_until_meta == 0:
+                        if icy_client:
+                            self.request.send(self.get_meta())
+                        self.byte_count = 0
+                    else:
+                        if bytes_until_meta < buffer_size:
+                            n_bytes = bytes_until_meta
+                        else:
+                            n_bytes = buffer_size
+
+                        buffer = f.read(n_bytes)
+                        self.request.send(buffer)
+                        self.byte_count += len(buffer)
+                self.dirty_meta = True
+            except IOError, e:
+                self.data['status'] = 'stopped'
+                self.data['song'] = ''
+                if e.errno == errno.EPIPE:
+                    print "Broken pipe"
+                elif e.errno == errno.ECONNRESET:
+                    print "Connection reset by peer"
+                else:
+                    print errno.errorcode[e.errno]
