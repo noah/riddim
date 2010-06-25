@@ -22,6 +22,9 @@ class RiddimMP3(object):
     def bitrate(self):
         return eyeD3.Mp3AudioFile(self.path).getBitRate()[1]
 
+    def title(self):
+        return ' - '.join(self.tags())
+
     def tags(self):
         artist = title = ""
         try:
