@@ -9,31 +9,34 @@ class RiddimOptions(object):
         self.config = RiddimConfig(os.getcwd()).config
         self.op = OptionParser()
         self.op.disable_interspersed_args() # unix-style
-        self.op.add_option('-k','--signal',help='signal stop/start/status')
-        # FIXME config
-        self.op.add_option('-P','--port',default=self.config.get('riddim','port'),help='port number to try')
+        # boolean flags
         self.flags = {
                 # server booleans
-                '-p' : ['--play',       'start playback'],
-                '-u' : ['--pause',      'pause playback'],
-                '-s' : ['--stop',       'stop playback'],
-                '-n' : ['--next',       'proceed to next track'],
-                '-r' : ['--prev',       'go back to previous track'],
-                '-R' : ['--repeat',     'toggle repeat'],
-                '-S' : ['--shuffle',    'toggle shuffle'],
-                '-Q' : ['--query',      'display server state'],
-                '-c' : ['--clear',      'clear playlist'],
+                '-p' : ['--play','start playback','store_true'],
+                '-u' : ['--pause','pause playback','store_true'],
+                '-s' : ['--stop','stop playback','store_true'],
+                '-n' : ['--next','proceed to next track','store_true'],
+                '-r' : ['--prev','go back to previous track','store_true'],
+                '-R' : ['--repeat','toggle repeat','store_true'],
+                '-S' : ['--shuffle','toggle shuffle','store_true'],
+                '-Q' : ['--query','display server state','store_true'],
+                '-c' : ['--clear','clear playlist','store_true'],
                 # only with signals
-                '-f' : ['--foreground', 'don\'t for the server'],
-                # non-bool
-                '-e' : ['--enqueue',    'enqueue track(s) onto playlist'],
+                '-f' : ['--foreground','don\'t fork the server','store_true'],
+                # non-booleans
+                '-k' : ['--signal','signal stop/start/status','store'],
+                '-P' : ['--port','port number to try','store'],
+                '-e' : ['--enqueue','enqueue track(s) onto playlist','store']
+
         }
         for short,v in self.flags.iteritems():
-            long,help = v
-            self.op.add_option(short,long,action='store_true',help=help)
+            long, help, action = v
+            self.op.add_option(short,long,action=action,help=help)
+
 
         self.options, self.args = self.op.parse_args()
         self.signal = self.check_signal()
+
         if self.signal:
             self.foreground = self.options.foreground
             self.port = self.options.port
@@ -49,8 +52,8 @@ class RiddimOptions(object):
 
     def check_flag(self):
         valid_flags = [re.sub('\-\-','',f[0]) for f in self.flags.values()]
-        # we can get away with using eval here because of the strict input
-        # checking.  right?  ;)
+        # we can get away with using eval here 
+        #   . . . right?  ;)
         try:
             return [flag for flag in valid_flags if eval("self.options.%s" % flag)][0]
         except IndexError:

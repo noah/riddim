@@ -1,8 +1,5 @@
 *.swp
-bin
-obj
+*.swo
 mp3
 ogg
-*.log
-*.pid
 *.pyc
