@@ -21,3 +21,4 @@ TODO
         ## Scrobbling
         ## Transcoding (flac, ogg, etc)
         ## Web control
+        ## Crossfading
