@@ -1,10 +1,6 @@
-import os
-import sys
-import fnmatch
-import itertools
-
-from lib.mp3 import RiddimMP3
 from lib.data import RiddimData
+from lib.playlist import RiddimPlaylist
+
 class RiddimRPCRegisters(object):
     """ 
         These are the commands that the local server accepts via XMLRPC
@@ -75,6 +71,10 @@ Playlist: %s:  %s
         self.data['previous'] = True
         return self.query()
 
+    def enqueue(self,path):
+        rp = RiddimPlaylist()
+        rp.enqueue(path)
+
 class RiddimRPCClient(object):
     """ XMLRPC client wrappers """
 
@@ -99,5 +99,5 @@ class RiddimRPCClient(object):
     def previous(self):
         return self.rpc.previous()
 
-    #def enqueue(self,path):
-    #    self.rpc.enqueue(path)
+    def enqueue(self,path):
+        self.rpc.enqueue(path)
