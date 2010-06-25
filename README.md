@@ -17,8 +17,7 @@ Dependencies
 TODO
 ---------------------------------------------------------------
 
-        ## Playlist management
-        ## Some kind of RPC for state management
         ## Auth
         ## Scrobbling
         ## Transcoding (flac, ogg, etc)
+        ## Web control
