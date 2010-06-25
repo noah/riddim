@@ -1,3 +1,4 @@
+import time
 from lib.data import RiddimData
 from lib.playlist import RiddimPlaylist
 
@@ -12,27 +13,21 @@ class RiddimRPCRegisters(object):
         self.data = RiddimData()
 
     def query(self):
-        playlist = self.playlist()
-        return """
-Playlist: %s:  %s
+        return """-=[RiDDiM]=-  uptime:  %s
+%s:  %s
 %s tracks %s
 %s
 """ %   ( 
+        self.uptime(),
         self.status(),
         self.song(),
         len(self.data['playlist']),
         30 * '*',
-        playlist,
+        RiddimPlaylist(),
         )
 
-    def playlist(self):
-        index = self.data['index']
-        pl = self.data['playlist']
-        new_pl = []
-        for i in range(len(pl)):
-            leader = "* " if int(i) == index and self.data['status'] == 'playing' else "  "
-            new_pl.append(''.join([leader,pl[i]['mp3'].title()]))
-        return "\n".join(new_pl)
+    def uptime(self):
+        return time.strftime('%H:%M:%S',time.gmtime(time.time()-self.data['started_on']))
 
     def clear(self):
         self.data['playlist'] = {}
