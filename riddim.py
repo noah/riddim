@@ -118,9 +118,17 @@ if __name__ == '__main__':
         flag = cli.o.flag
         if flag == 'enqueue':
             cli.enqueue(opts.enqueue)
-        elif flag == 'query':
-            print cli.query()
         elif flag == 'clear':
+            print "[]"
             cli.clear()
-
+        elif flag == 'next':
+            print ">> ", cli.next()
+        elif flag == 'prev':
+            print "<< ", cli.previous()
+        elif flag == 'pause':
+            print "||"
+            cli.pause()
+        elif flag == 'query':
+            print "?"
+            print cli.query()
     sys.exit(0)

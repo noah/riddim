@@ -1,5 +1,5 @@
 import os
-import json
+import pickle
 
 import threading
 lock = threading.Lock()
@@ -22,7 +22,7 @@ class RiddimData(object):
 
     def __setitem__(self,key,value):
         D = self.read()
-        D[str(key)] = str(value)
+        D[key] = value
         self.write(D)
 
     def truncate(self):
@@ -35,23 +35,30 @@ class RiddimData(object):
 
     def read(self):
         with lock:
+            data = None
             try:
                 f = open(self.datafile,'r')
+                data = pickle.load(f)
+                f.close()
             except IOError:
                 f = open(self.datafile,'w')
                 f.close()
-            try:
-                data = json.load(f)
-            except ValueError:
-                data = {}
-            f.close()
+            except EOFError:
+                f = open(self.datafile,'w')
+                f.close()
+            if data is None: data = {}
             return data
     
     def write(self,data):
         with lock:
-            return json.dump(data,open(self.datafile,'w'),indent=2)
+            return pickle.dump(data,open(self.datafile,'w'))
 
-#if __name__ == '__main__':
-    #rd = RiddimData()
-    #rd['p'] = 234895723457908236489572346987234565
-    #print rd['p']
+# if __name__ == '__main__':
+#     rd = RiddimData()
+#     rd['p'] = 234895723457908236489572346987234565
+#     rd['this'] = True
+#     print rd['p']
+#     if rd['this']:
+#         print "yup"
+#     print rd.truncate()
+#     print rd.read()

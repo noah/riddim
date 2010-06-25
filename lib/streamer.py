@@ -15,6 +15,8 @@ class RiddimStreamer(object):
         self.config = RiddimConfig(os.getcwd()).config
         self.request = request
         self.byte_count = 0
+        self.total_bytes = 0
+
 
     # ~ It's always a good day for smoking crack at Nullsoft!
     # ~ See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
@@ -55,8 +57,7 @@ class RiddimStreamer(object):
                 self.dirty_meta = True
                 mp3_size = self.mp3.size()
                 while f.tell() < mp3_size:
-                    # TODO
-                    # put check for next, prev etc flags here
+                    # check for state change every 0.25MB (local I/O)
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
@@ -70,8 +71,20 @@ class RiddimStreamer(object):
                         buffer = f.read(n_bytes)
                         self.request.send(buffer)
                         self.byte_count += len(buffer)
+                        self.total_bytes += len(buffer)
+
+                    if self.byte_count > 0 and ((self.total_bytes % 262144) == 0):
+                        print "self.byte_count:  %s" % self.total_bytes
+                        # if we need to skip, reset the flag
+                        if self.data['next'] or self.data['previous']:
+                            self.data['next'] = self.data['previous'] = False
+                            # and get a new song
+                            next_prev = True
+                            break
+                if not next_prev:
+                    # increment the counter if we're not ffwd or rewinding
+                    self.data['index'] += 1
                 self.dirty_meta = True
-                self.data['index'] = int(self.data['index']) + 1
             except IOError, e:
                 self.data['status'] = 'stopped'
                 self.data['song'] = None
@@ -82,4 +95,3 @@ class RiddimStreamer(object):
                 else:
                     print errno.errorcode[e.errno]
                 break # while
-

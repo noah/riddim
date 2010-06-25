@@ -1,12 +1,24 @@
 RiDDiM ~~ SHOUTcast on a diet
+==============================================================
 
 Synopsis
+---------------------------------------------------------------
+
         % ./riddim.py -k start
         % mplayer http://localhost:18944
+ 
+
+Dependencies
+---------------------------------------------------------------
+
+        % python --version
+        Python 2.6.5
 
 TODO
-        * Playlist management
-        * Some kind of RPC for state management
-        * Auth
-        * Scrobbling
-        * Transcoding (flac, ogg, etc)
+---------------------------------------------------------------
+
+        ## Playlist management
+        ## Some kind of RPC for state management
+        ## Auth
+        ## Scrobbling
+        ## Transcoding (flac, ogg, etc)

@@ -4,12 +4,12 @@ class RiddimPlaylist(object):
 
     def __init__(self):
         self.data = RiddimData()
-        self.playlist = sorted(eval(self.data['playlist']).keys())
+        self.playlist = sorted(self.data['playlist'].keys())
 
     def get_song(self):
-        playlist = eval(self.data['playlist']).keys()
+        playlist = self.data['playlist'].keys()
         if playlist is None: return False
-        I = int(self.data['index'])
+        I = self.data['index']
         if I is None: I = 0
     
         try:
