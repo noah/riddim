@@ -80,7 +80,7 @@ class RiddimCLI(RiddimRPCClient):
         server,thread = self.kickoff(port)
         sys.exit(0)
 
-    def stop(self):
+    def shutdown(self):
         pid = self.pid()
         open(self.pidfile,'w')
         if pid:
@@ -108,8 +108,8 @@ if __name__ == '__main__':
 
     # handle init signals
     if cli.o.signal == 'start':     cli.start()
-    if cli.o.signal == 'stop':      cli.stop()
-    if cli.o.signal == 'restart':   cli.stop(); cli.start();
+    if cli.o.signal == 'stop':      cli.shutdown()
+    if cli.o.signal == 'restart':   cli.shutdown(); cli.start();
     if cli.o.signal == 'status':    cli.status()
 
     # handle flags
@@ -117,18 +117,21 @@ if __name__ == '__main__':
     if cli.o.flag:
         flag = cli.o.flag
         if flag == 'enqueue':
+            if not cli.pid(): cli.quit()
             cli.enqueue(opts.enqueue)
         elif flag == 'clear':
             print "[]"
             cli.clear()
         elif flag == 'next':
-            print ">> ", cli.next()
+            print ">>\n", cli.next()
         elif flag == 'prev':
-            print "<< ", cli.previous()
+            print "<<\n", cli.previous()
         elif flag == 'pause':
             print "||"
             cli.pause()
         elif flag == 'query':
-            print "?"
             print cli.query()
+        elif flag == 'stop':
+            print "."
+            cli.stop()
     sys.exit(0)
