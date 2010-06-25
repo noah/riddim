@@ -9,11 +9,8 @@ from lib.playlist import RiddimPlaylist
 
 class RiddimStreamer(object):
     def __init__(self,request):
-<<<<<<< HEAD
-=======
         self.data = RiddimData()
         self.playlist = RiddimPlaylist()
->>>>>>> data
         self.config = RiddimConfig(os.getcwd()).config
         self.request = request
         self.byte_count = 0
