@@ -3,7 +3,6 @@ import time
 import errno
 import socket
 
-from lib.mp3 import RiddimMP3
 from lib.data import RiddimData
 from lib.config import RiddimConfig
 from lib.playlist import RiddimPlaylist
@@ -23,12 +22,12 @@ class RiddimStreamer(object):
     # ~ This explains the whole cockamamie thing:
     #   http://www.smackfu.com/stuff/programming/shoutcast.html
 
-    def get_meta(self):
+    def get_meta(self,song):
         # lifted from amarok
         metadata = "%cStreamTitle='%s';StreamUrl='%s';%s"
         padding = '\x00' * 16
         if self.dirty_meta:
-            stream_title = str(self.mp3)
+            stream_title = str(song['mp3'])
             stream_url = self.config.get('riddim','url')
 
             # 28 is the number of static characters in metadata (!)
@@ -44,24 +43,23 @@ class RiddimStreamer(object):
         while True:
             song = self.playlist.get_song()
             if not song: return
-            self.mp3 = RiddimMP3(song)
-            print 'streaming %s' % self.mp3
+            print '> %s' % song['mp3']
 
             try:
                 # this loop gets its ideas about the shoutcast protocol from amarok
                 buffer              = 0
                 buffer_size         = 4096
                 metadata_interval   = self.config.getint('icy','metaint')
-                f = file(song, 'r')
-                f.seek(self.mp3.start())
+                f = file(song['path'], 'r')
+                f.seek(song['mp3'].start())
                 self.dirty_meta = True
-                mp3_size = self.mp3.size()
+                mp3_size = song['mp3'].size()
+                next_prev = False
                 while f.tell() < mp3_size:
-                    # check for state change every 0.25MB (local I/O)
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
-                            self.request.send(self.get_meta())
+                            self.request.send(self.get_meta(song))
                         self.byte_count = 0
                     else:
                         if bytes_until_meta < buffer_size:
@@ -73,9 +71,15 @@ class RiddimStreamer(object):
                         self.byte_count += len(buffer)
                         self.total_bytes += len(buffer)
 
-                    if self.byte_count > 0 and ((self.total_bytes % 262144) == 0):
-                        print "self.byte_count:  %s" % self.total_bytes
-                        # if we need to skip, reset the flag
+                    # check for state change every 0.5MB (local I/O!)
+                    # this sucks FIXME
+                    if self.byte_count > 0 and ((self.total_bytes % 524288) == 0):
+                        #print "self.byte_count:  %s" % self.total_bytes
+                        if self.data['status'] == 'stopped':
+                            self.data['song'] == ''
+                            print "RiDDiM stopped."
+                            return
+                        # if we need to skip, reset the flag(s)
                         if self.data['next'] or self.data['previous']:
                             self.data['next'] = self.data['previous'] = False
                             # and get a new song
