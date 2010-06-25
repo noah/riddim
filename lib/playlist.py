@@ -1,4 +1,9 @@
+import os
+import fnmatch
+import itertools
+
 from lib.data import RiddimData
+from lib.mp3 import RiddimMP3
 
 class RiddimPlaylist(object):
 
@@ -18,6 +23,9 @@ class RiddimPlaylist(object):
             self.data['song'] = song['mp3'].title()
             return song
         except IndexError:
+            print "No song at index %s" % I
+            return False
+        except KeyError:
             print "No song at index %s" % I
             return False
     
@@ -40,7 +48,6 @@ class RiddimPlaylist(object):
             last = sorted(playlist.keys())[-1] + 1
 
         for i in range(len(eL)):
-            print eL[i]
             mp3 = RiddimMP3(eL[i])
             playlist[i+last] = {
                     'path'  : eL[i],
