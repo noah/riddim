@@ -53,12 +53,7 @@ class RiddimData(object):
         with lock:
             return pickle.dump(data,open(self.datafile,'w'))
 
-# if __name__ == '__main__':
-#     rd = RiddimData()
-#     rd['p'] = 234895723457908236489572346987234565
-#     rd['this'] = True
-#     print rd['p']
-#     if rd['this']:
-#         print "yup"
-#     print rd.truncate()
-#     print rd.read()
+if __name__ == '__main__':
+    import pprint
+    rd = RiddimData()
+    pprint.pprint(rd.read())
