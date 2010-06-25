@@ -11,6 +11,15 @@ class RiddimPlaylist(object):
         self.data = RiddimData()
         self.playlist = sorted(self.data['playlist'].keys())
 
+    def __str__(self):
+        index = self.data['index']
+        pl = self.data['playlist']
+        new_pl = []
+        for i in range(len(pl)):
+            leader = "* " if int(i) == index and self.data['status'] == 'playing' else "  "
+            new_pl.append(''.join([leader,pl[i]['mp3'].title()]))
+        return "\n".join(new_pl)
+
     def get_song(self):
         playlist = self.data['playlist']
         if playlist is None: return False
