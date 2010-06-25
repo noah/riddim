@@ -74,7 +74,7 @@ This code may suck.
 
 License 
 ---------------------------------------------------------------
-Copyright (c) <2010> <Noah K. Tilton> <noah@downbe.at>
+Copyright (c) 2010 Noah K. Tilton <noah@downbe.at>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
