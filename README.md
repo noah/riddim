@@ -4,10 +4,11 @@ RiDDiM ~~ SHOUTcast on a diet
 Synopsis
 ---------------------------------------------------------------
 
+        % $EDITOR riddim.cfg
         % ./riddim.py -k start
         % ./riddim.py --enqueue ./path/to/bob_marley
         % mplayer http://localhost:18944
-        % python riddim.py -Q     
+        % ./riddim.py -Q     
 
         Playlist: playing:  Bob Marley & The Wailers - Stop That Train
         10 tracks ******************************
