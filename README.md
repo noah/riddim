@@ -10,7 +10,8 @@ Synopsis
         % mplayer http://localhost:18944
         % ./riddim.py -Q     
 
-        Playlist: playing:  Bob Marley & The Wailers - Stop That Train
+        -=[RiDDiM]=-  uptime:  00:00:13
+        playing:  Bob Marley & The Wailers - Stop That Train
         10 tracks ******************************
         * Bob Marley & The Wailers - Intro
           Bob Marley & The Wailers - Rasta Man Chant
