@@ -12,10 +12,10 @@ Synopsis
 
         Playlist: playing:  Bob Marley & The Wailers - Stop That Train
         10 tracks ******************************
-          Bob Marley & The Wailers - Intro
+        * Bob Marley & The Wailers - Intro
           Bob Marley & The Wailers - Rasta Man Chant
           Bob Marley & The Wailers - Slave Driver
-        * Bob Marley & The Wailers - Stop That Train
+          Bob Marley & The Wailers - Stop That Train
           Bob Marley & The Wailers - No More Trouble
           Bob Marley & The Wailers - 400 Years
           Bob Marley & The Wailers - Stir It Up
