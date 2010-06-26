@@ -60,10 +60,10 @@ class RiddimPlaylist(object):
 
         allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
         for i in range(len(eL)):
-            ra = RiddimAudio(eL[i]).data()
+            ra = RiddimAudio(eL[i])
             if ra.corrupt: continue
             playlist[i+last] = {
                     'path'      : eL[i],
-                    'audio'     : 
+                    'audio'     : ra.data()
             }
         self.data['playlist'] = playlist
