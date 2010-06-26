@@ -25,7 +25,6 @@ class RiddimOptions(object):
                 '-f' : ['--foreground','don\'t fork the server','store_true'],
                 # non-booleans
                 '-k' : ['--signal','signal stop/start/status','store'],
-                '-P' : ['--port','port number to try','store'],
                 '-e' : ['--enqueue','enqueue track(s) onto playlist','store']
 
         }
@@ -33,6 +32,7 @@ class RiddimOptions(object):
             long, help, action = v
             self.op.add_option(short,long,action=action,help=help)
 
+        self.op.add_option('-P','--port',action='store',help='port number to try',default=18944)
 
         self.options, self.args = self.op.parse_args()
         self.signal = self.check_signal()
