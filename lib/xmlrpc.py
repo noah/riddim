@@ -31,6 +31,7 @@ class RiddimRPCRegisters(object):
 
     def clear(self):
         self.data['playlist'] = {}
+        self.data['index'] = 0
 
     def song(self):
         return self.data['song']
@@ -48,7 +49,7 @@ class RiddimRPCRegisters(object):
         self.data['status'] = 'paused'
 
     def current(self):
-        return self.data['playlist'][self.data['index']]['mp3'].title()
+        return self.data['playlist'][self.data['index']]['audio'].title()
 
     def next(self):
         if self.data['index']+1 != len(self.data['playlist'].keys()):
