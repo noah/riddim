@@ -1,5 +1,4 @@
 import os
-import magic
 import fnmatch
 import itertools
 
@@ -60,19 +59,11 @@ class RiddimPlaylist(object):
             last = sorted(playlist.keys())[-1] + 1
 
         allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
-        m = magic.open(magic.MAGIC_MIME)
-        m.load()
         for i in range(len(eL)):
-            mimetype = False
-            try:
-                mimetype = m.file(eL[i]).split(';')[0]
-            except:
-                pass
-            if not mimetype or mimetype not in allowable_mimetypes:
-                print "couldn't process %s.  mimetype:  %s" % (eL[i],mimetype)
-                continue
+            ra = RiddimAudio(eL[i]).data()
+            if ra.corrupt: continue
             playlist[i+last] = {
                     'path'      : eL[i],
-                    'audio'     : RiddimAudio(eL[i],mimetype).data()
+                    'audio'     : 
             }
         self.data['playlist'] = playlist

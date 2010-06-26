@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 try:
     # easyid3 maps the real id3 standard tag names to the same as the flac ones
@@ -80,17 +81,19 @@ class AudioUtil(object):
 
 class RiddimAudio(AudioUtil):
 
-    def __init__(self,path,mimetype):
+    def __init__(self,path):
         self.path = path
-        self.mimetype = mimetype
 
-        if mimetype == 'audio/mpeg':
+        self.corrupt = False
+
+        self.mimetype = subprocess.Popen("/usr/bin/file -i \"%s\"" % path, shell=True, \
+                stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
+        if self.mimetype == 'audio/mpeg':
             self.audio = MP3(path,ID3=EasyID3)
-        elif mimetype == 'audio/x-flac':
+        elif self.mimetype == 'audio/x-flac':
             self.audio = FLAC(path)
         else:
-            print "Mimetype %s unsupported" % mimetype
-            return
+            print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
 
     def __getitem__(self,key):
         try:
@@ -109,9 +112,15 @@ class RiddimAudio(AudioUtil):
         return ' - '.join(self.tags())
 
     def tags(self):
-        return [str(self.audio['artist'][0]),
-                str(self.audio['album'][0]),
-                str(self.audio['title'][0])]
+        artist = album = title = ""
+        try:
+            artist = str(self.audio['artist'][0])
+            album = str(self.audio['album'][0])
+            title = str(self.audio['title'][0])
+        except:
+            print "Couldn't parse mimetype for %s" % self.path
+            self.corrupt = True
+        return [artist,album,title]
 
     def size(self):
         return os.stat(self.path)[6]
@@ -138,5 +147,8 @@ class RiddimAudio(AudioUtil):
         }
 
 if  __name__ == '__main__':
-    song = RiddimAudio('./audio/01. Intro.MP3','audio/mpeg')
-    print song
+    import glob
+    for file in glob.glob("./audio/*"):
+        if not os.path.isdir(file):
+            song = RiddimAudio(file)
+            print song
