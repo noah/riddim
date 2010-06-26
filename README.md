@@ -58,6 +58,9 @@ Dependencies
         % python --version
         Python 2.6.5
 
+        % pacman -Q mutagen  
+        mutagen 1.19-1
+
 Motivation
 ---------------------------------------------------------------
 All of my mp3s are at my house, on my server.  When I'm elsewhere, I like to

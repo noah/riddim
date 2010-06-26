@@ -1,5 +1,5 @@
 *.swp
 *.swo
-mp3
-ogg
+audio
 *.pyc
+data

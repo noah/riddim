@@ -27,7 +27,7 @@ class RiddimStreamer(object):
         metadata = "%cStreamTitle='%s';StreamUrl='%s';%s"
         padding = '\x00' * 16
         if self.dirty_meta:
-            stream_title = str(song['mp3'])
+            stream_title = str(song['audio']['title'])
             stream_url = self.config.get('riddim','url')
 
             # 28 is the number of static characters in metadata (!)
@@ -43,7 +43,7 @@ class RiddimStreamer(object):
         while True:
             song = self.playlist.get_song()
             if not song: return
-            print '> %s' % song['mp3']
+            print '> %s' % str(song['audio']['title'])
 
             try:
                 # this loop gets its ideas about the shoutcast protocol from amarok
@@ -51,11 +51,12 @@ class RiddimStreamer(object):
                 buffer_size         = 4096
                 metadata_interval   = self.config.getint('icy','metaint')
                 f = file(song['path'], 'r')
-                f.seek(song['mp3'].start())
+                f.seek(song['audio']['start'])
                 self.dirty_meta = True
-                mp3_size = song['mp3'].size()
+
+                audio_size = song['audio']['size']
                 next_prev = False
-                while f.tell() < mp3_size:
+                while f.tell() < audio_size:
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
@@ -90,7 +91,6 @@ class RiddimStreamer(object):
                     self.data['index'] += 1
                 self.dirty_meta = True
             except IOError, e:
-                self.data['status'] = 'stopped'
                 self.data['song'] = None
                 if e.errno == errno.EPIPE:
                     print "Broken pipe"

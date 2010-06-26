@@ -1,9 +1,10 @@
 import os
+import magic
 import fnmatch
 import itertools
 
 from lib.data import RiddimData
-from lib.mp3 import RiddimMP3
+from lib.audio import RiddimAudio
 
 class RiddimPlaylist(object):
 
@@ -17,7 +18,7 @@ class RiddimPlaylist(object):
         new_pl = []
         for i in range(len(pl)):
             leader = "* " if int(i) == index and self.data['status'] == 'playing' else "  "
-            new_pl.append(''.join([leader,pl[i]['mp3'].title()]))
+            new_pl.append(''.join([leader,pl[i]['audio']['title']]))
         return "\n".join(new_pl)
 
     def get_song(self):
@@ -29,7 +30,7 @@ class RiddimPlaylist(object):
         try:
             song = playlist[I]
             self.data['status'] = 'playing'
-            self.data['song'] = song['mp3'].title()
+            self.data['song'] = song['audio']['title']
             return song
         except IndexError:
             print "No song at index %s" % I
@@ -41,13 +42,15 @@ class RiddimPlaylist(object):
     def enqueue_list(self,path):
         results = []
         for base, dirs, files in os.walk(path):
-            goodfiles = fnmatch.filter(files,'*.[mM][pP]3')
-            #results.extend(os.path.join(base, f) for f in goodfiles)
-            results.extend(os.path.realpath(os.path.join(base, f)) for f in goodfiles)
+            mp3 = fnmatch.filter(files,'*.[mM][pP]3')
+            # TODO flac
+            results.extend(os.path.realpath(os.path.join(base, f)) for f in mp3)
         return results
 
     def enqueue(self,path):
+        print "path is %s " % path
         eL = self.enqueue_list(path)
+        print eL
         eL.sort()
         playlist = self.data['playlist']
         if playlist is None: playlist = {}
@@ -56,15 +59,20 @@ class RiddimPlaylist(object):
         else:
             last = sorted(playlist.keys())[-1] + 1
 
+        allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
+        m = magic.open(magic.MAGIC_MIME)
+        m.load()
         for i in range(len(eL)):
-            mp3 = RiddimMP3(eL[i])
+            mimetype = False
+            try:
+                mimetype = m.file(eL[i]).split(';')[0]
+            except:
+                pass
+            if not mimetype or mimetype not in allowable_mimetypes:
+                print "couldn't process %s.  mimetype:  %s" % (eL[i],mimetype)
+                continue
             playlist[i+last] = {
-                    'path'  : eL[i],
-                    'mp3'   : mp3
+                    'path'      : eL[i],
+                    'audio'     : RiddimAudio(eL[i],mimetype).data()
             }
         self.data['playlist'] = playlist
-        # self.data['index'] = str(I)
-        # idx = int(self.data['index'])
-        # self.data['index'] = idx + 1
-        # self.data['status'] = 'stopped'
-        # self.data['song'] = ''
