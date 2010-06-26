@@ -9,7 +9,7 @@ class RiddimRPCRegisters(object):
     """
 
     def __init__(self,server):
-        self.server = server
+        #self.server = server
         self.data = RiddimData()
 
     def query(self):
