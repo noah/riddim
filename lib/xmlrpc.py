@@ -1,3 +1,5 @@
+import re
+import copy
 import time
 from lib.data import RiddimData
 from lib.playlist import RiddimPlaylist
@@ -13,6 +15,7 @@ class RiddimRPCRegisters(object):
         self.data = RiddimData()
 
     def query(self):
+
         return """-=[RiDDiM]=-  uptime:  %s
 %s:  %s
 %s tracks %s
@@ -29,9 +32,24 @@ class RiddimRPCRegisters(object):
     def uptime(self):
         return time.strftime('%H:%M:%S',time.gmtime(time.time()-self.data['started_on']))
 
-    def clear(self):
-        self.data['playlist'] = {}
-        self.data['index'] = 0
+    def clear(self,regex):
+        if regex:
+            regex = re.compile(regex,re.IGNORECASE)
+            playlist = {}
+            for i,track in self.data['playlist'].iteritems():
+                title = track['audio']['title']
+                if not re.search(regex,title):
+                    playlist[i] = track
+            self.data['playlist'] = playlist
+        else:
+            self.data['playlist'] = {}
+
+        try:
+            self.data['index'] = sorted(self.data['playlist'].keys())[0]
+        except IndexError:
+            self.data['index'] = 0
+
+        return self.query()
 
     def song(self):
         return self.data['song']
@@ -77,8 +95,8 @@ class RiddimRPCClient(object):
     def query(self):
         return self.rpc.query()
 
-    def clear(self):
-        return self.rpc.clear()
+    def clear(self,regex):
+        return self.rpc.clear(regex)
 
     def stop(self):
         return self.rpc.stop()

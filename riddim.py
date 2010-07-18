@@ -144,8 +144,7 @@ if __name__ == '__main__':
             if not cli.pid(): cli.quit()
             cli.enqueue(opts.enqueue)
         elif flag == 'clear':
-            print "[]"
-            cli.clear()
+            print cli.clear(opts.clear)
         elif flag == 'next':
             print ">>\n", cli.next()
         elif flag == 'prev':

@@ -15,10 +15,10 @@ class RiddimPlaylist(object):
         index = self.data['index']
         pl = self.data['playlist']
         new_pl = []
-        for i in range(len(pl)):
+        for i,track in pl.iteritems():
             leader = "* " if int(i) == index and self.data['status'] == 'playing' else "  "
-            new_pl.append(''.join([leader,pl[i]['audio']['title']]))
-        return "\n".join(new_pl)
+            new_pl.append(''.join([leader,track['audio']['title']]))
+        return '\n'.join(new_pl)
 
     def get_song(self):
         playlist = self.data['playlist']
@@ -47,9 +47,7 @@ class RiddimPlaylist(object):
         return results
 
     def enqueue(self,path):
-        print "path is %s " % path
         eL = self.enqueue_list(path)
-        print eL
         eL.sort()
         playlist = self.data['playlist']
         if playlist is None: playlist = {}
@@ -67,3 +65,6 @@ class RiddimPlaylist(object):
                     'audio'     : ra.data()
             }
         self.data['playlist'] = playlist
+
+#if __name__ == '__main__':
+#    print RiddimPlaylist()
