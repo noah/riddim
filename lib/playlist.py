@@ -55,8 +55,7 @@ class RiddimPlaylist(object):
             last = 0
         else:
             last = sorted(playlist.keys())[-1] + 1
-
-        allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
+        #allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
         for i in range(len(eL)):
             ra = RiddimAudio(eL[i])
             if ra.corrupt: continue

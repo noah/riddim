@@ -88,12 +88,13 @@ class RiddimAudio(AudioUtil):
 
         self.mimetype = subprocess.Popen("/usr/bin/file -i \"%s\"" % path, shell=True, \
                 stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
-        if self.mimetype == 'audio/mpeg':
-            self.audio = MP3(path,ID3=EasyID3)
-        elif self.mimetype == 'audio/x-flac':
+
+        if self.mimetype == 'audio/x-flac':
             self.audio = FLAC(path)
         else:
-            print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
+            if self.mimetype != 'audio/mpeg':
+                print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
+            self.audio = MP3(path,ID3=EasyID3)
 
     def __getitem__(self,key):
         try:
