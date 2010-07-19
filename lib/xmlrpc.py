@@ -44,10 +44,10 @@ class RiddimRPCRegisters(object):
         else:
             self.data['playlist'] = {}
 
-        try:
-            self.data['index'] = sorted(self.data['playlist'].keys())[0]
-        except IndexError:
-            self.data['index'] = 0
+        #try:
+        #    self.data['index'] = sorted(self.data['playlist'].keys())[0]
+        #except IndexError:
+        #    self.data['index'] = 0
 
         return self.query()
 
