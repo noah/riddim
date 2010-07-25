@@ -24,7 +24,7 @@ class RiddimPlaylist(object):
         playlist = self.data['playlist']
         if playlist is None: return False
         I = self.data['index']
-        if I is None: I = 0
+        if I is None or I > len(playlist): I = 0
 
         try:
             song = playlist[I]
