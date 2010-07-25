@@ -69,19 +69,16 @@ class RiddimRPCRegisters(object):
     def current(self):
         return self.data['playlist'][self.data['index']]['audio'].title()
 
-    def next(self):
-        if self.data['index']+1 != len(self.data['playlist'].keys()):
-            self.data['index'] += 1
-        else:
-            self.data['index'] = 0
+    def next(self,n):
+        lpl = len(self.data['playlist'].keys())
+        self.data['index'] += int(n)
+        if self.data['index'] >= lpl: self.data['index'] = lpl-1
         self.data['next'] = True
         return self.query()
 
-    def previous(self):
-        if self.data['index']-1 != len(self.data['playlist'].keys()):
-            self.data['index'] -= 1
-        else:
-            self.data['index'] = 0
+    def previous(self,n):
+        self.data['index'] -= int(n)
+        if self.data['index'] < 0: self.data['index'] = 0
         self.data['previous'] = True
         return self.query()
 
@@ -107,11 +104,11 @@ class RiddimRPCClient(object):
     #def play(self):
     #    return self.rpc.play()
 
-    def next(self):
-        return self.rpc.next()
+    def next(self,n):
+        return self.rpc.next(n)
 
-    def previous(self):
-        return self.rpc.previous()
+    def previous(self,n):
+        return self.rpc.previous(n)
 
     def enqueue(self,path):
         self.rpc.enqueue(path)

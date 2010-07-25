@@ -16,8 +16,8 @@ class RiddimPlaylist(object):
         pl = self.data['playlist']
         new_pl = []
         for i,track in pl.iteritems():
-            leader = "* " if int(i) == index and self.data['status'] == 'playing' else "  "
-            new_pl.append(''.join([leader,track['audio']['title']]))
+            leader = "*" if int(i) == index and self.data['status'] == 'playing' else " "
+            new_pl.append(' '.join([leader,'%0*d' % (len(pl[len(pl)-1]),i+1),track['audio']['title']]))
         return '\n'.join(new_pl)
 
     def get_song(self):

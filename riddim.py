@@ -146,9 +146,9 @@ if __name__ == '__main__':
         elif flag == 'clear':
             print cli.clear(opts.clear)
         elif flag == 'next':
-            print ">>\n", cli.next()
+            print ">>\n", cli.next(opts.next)
         elif flag == 'prev':
-            print "<<\n", cli.previous()
+            print "<<\n", cli.previous(opts.prev)
         elif flag == 'pause':
             print "||"
             cli.pause()
