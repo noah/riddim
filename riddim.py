@@ -98,7 +98,7 @@ class RiddimCLI(RiddimRPCClient):
             open(self.pidfile,'w').write(str(pid))
 
         port = self.o.port
-        if port is None:
+        if not port:
             port=18944
         server,thread = self.kickoff(port)
         sys.exit(0)
@@ -144,12 +144,10 @@ if __name__ == '__main__':
         if flag == 'enqueue':
             if not cli.pid(): cli.quit()
             cli.enqueue(opts.enqueue)
+        elif flag == 'index':
+            print cli.index(opts.index)
         elif flag == 'clear':
             print cli.clear(opts.clear)
-        elif flag == 'next':
-            print ">>\n", cli.next(opts.next)
-        elif flag == 'prev':
-            print "<<\n", cli.previous(opts.prev)
         elif flag == 'pause':
             print "||"
             cli.pause()

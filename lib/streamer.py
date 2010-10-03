@@ -55,7 +55,7 @@ class RiddimStreamer(object):
                 self.dirty_meta = True
 
                 audio_size = song['audio']['size']
-                next_prev = False
+                index_change = False
                 while f.tell() < audio_size:
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
@@ -81,12 +81,12 @@ class RiddimStreamer(object):
                             print "RiDDiM stopped."
                             return
                         # if we need to skip, reset the flag(s)
-                        if self.data['next'] or self.data['previous']:
-                            self.data['next'] = self.data['previous'] = False
+                        if self.data['index_changed']:
+                            self.data['index_changed'] = False
                             # and get a new song
-                            next_prev = True
+                            index_change = True
                             break
-                if not next_prev:
+                if not index_change :
                     # increment the counter if we're not ffwd or rewinding
                     self.data['index'] += 1
                 self.dirty_meta = True

@@ -15,14 +15,13 @@ class RiddimOptions(object):
                 '-p' : ['--play','start playback','store_true',False],
                 '-u' : ['--pause','pause playback','store_true',False],
                 '-s' : ['--stop','stop playback','store_true',False],
-                '-n' : ['--next','proceed to next track','store',0],
-                '-r' : ['--prev','go back to previous track','store',0],
                 '-R' : ['--repeat','toggle repeat','store_true',False],
                 '-S' : ['--shuffle','toggle shuffle','store_true',False],
                 '-Q' : ['--query','display server state','store_true',False],
                 # only with signals
                 '-f' : ['--foreground','don\'t fork the server','store_true',False],
                 # non-booleans
+                '-i' : ['--index','set song index to value','store',False],
                 '-k' : ['--signal','signal stop/start/status','store',False],
                 '-e' : ['--enqueue','enqueue track(s) onto playlist','store',False],
                 '-c' : ['--clear','clear playlist with optional regex','store',None],

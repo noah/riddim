@@ -32,6 +32,11 @@ class RiddimRPCRegisters(object):
     def uptime(self):
         return time.strftime('%H:%M:%S',time.gmtime(time.time()-self.data['started_on']))
 
+    def index(self,index):
+        self.data['index'] = int(index)-1
+        self.data['index_changed'] = True
+        return self.query()
+
     def clear(self,regex=None):
         if regex:
             regex = re.compile(regex,re.IGNORECASE)
@@ -71,18 +76,18 @@ class RiddimRPCRegisters(object):
     def current(self):
         return self.data['playlist'][self.data['index']]['audio'].title()
 
-    def next(self,n):
-        lpl = len(self.data['playlist'].keys())
-        self.data['index'] += int(n)
-        if self.data['index'] >= lpl: self.data['index'] = lpl-1
-        self.data['next'] = True
-        return self.query()
+    # def next(self,n):
+    #     lpl = len(self.data['playlist'].keys())
+    #     self.data['index'] += int(n)
+    #     if self.data['index'] >= lpl: self.data['index'] = lpl-1
+    #     self.data['next'] = True
+    #     return self.query()
 
-    def previous(self,n):
-        self.data['index'] -= int(n)
-        if self.data['index'] < 0: self.data['index'] = 0
-        self.data['previous'] = True
-        return self.query()
+    # def previous(self,n):
+    #     self.data['index'] -= int(n)
+    #     if self.data['index'] < 0: self.data['index'] = 0
+    #     self.data['previous'] = True
+    #     return self.query()
 
     def enqueue(self,path):
         rp = RiddimPlaylist()
@@ -97,6 +102,9 @@ class RiddimRPCClient(object):
     def clear(self,regex):
         return self.rpc.clear(regex)
 
+    def index(self,i):
+        return self.rpc.index(i)
+
     def stop(self):
         return self.rpc.stop()
 
@@ -106,11 +114,11 @@ class RiddimRPCClient(object):
     #def play(self):
     #    return self.rpc.play()
 
-    def next(self,n):
-        return self.rpc.next(n)
+    #def next(self,n):
+    #    return self.rpc.next(n)
 
-    def previous(self,n):
-        return self.rpc.previous(n)
+    #def previous(self,n):
+    #    return self.rpc.previous(n)
 
     def enqueue(self,path):
         self.rpc.enqueue(path)
