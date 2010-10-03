@@ -13,7 +13,7 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
     def do_HEAD(self,icy_client):
         if icy_client:
             self.send_response(200,"ICY")
-            config = RiddimConfig(os.getcwd()).config
+            config = RiddimConfig().config
             # fixme verbose
             headers = {
                 'icy-notice1'   : config.get('icy','notice1'),
