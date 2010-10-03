@@ -17,7 +17,7 @@ class RiddimOptions(object):
                 '-s' : ['--stop','stop playback','store_true',False],
                 '-R' : ['--repeat','toggle repeat','store_true',False],
                 '-S' : ['--shuffle','toggle shuffle','store_true',False],
-                '-Q' : ['--query','display server state','store_true',False],
+                '-q' : ['--query','display server state','store_true',False],
                 # only with signals
                 '-f' : ['--foreground','don\'t fork the server','store_true',False],
                 # non-booleans
