@@ -137,8 +137,10 @@ if __name__ == '__main__':
 
     # handle flags
     opts = cli.o.options
+    #print opts
     if cli.o.flag:
         flag = cli.o.flag
+        #print flag
         if flag == 'enqueue':
             if not cli.pid(): cli.quit()
             cli.enqueue(opts.enqueue)

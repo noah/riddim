@@ -25,14 +25,14 @@ class RiddimOptions(object):
                 # non-booleans
                 '-k' : ['--signal','signal stop/start/status','store',False],
                 '-e' : ['--enqueue','enqueue track(s) onto playlist','store',False],
-                '-c' : ['--clear','clear playlist with optional regex','store','*'],
-                '-P' : ['--port','port number to try','store',18944]
+                '-c' : ['--clear','clear playlist with optional regex','store',None],
+                '-P' : ['--port','port number to try','store',False]
 
         }
 
         for short,v in self.flags.iteritems():
             long, help, action, default = v
-            self.op.add_option(short,long,action=action,help=help)
+            self.op.add_option(short,long,action=action,help=help,default=default)
 
         self.options, self.args = self.op.parse_args()
         self.signal = self.check_signal()

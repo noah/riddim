@@ -32,7 +32,7 @@ class RiddimRPCRegisters(object):
     def uptime(self):
         return time.strftime('%H:%M:%S',time.gmtime(time.time()-self.data['started_on']))
 
-    def clear(self,regex):
+    def clear(self,regex=None):
         if regex:
             regex = re.compile(regex,re.IGNORECASE)
             playlist = {}
