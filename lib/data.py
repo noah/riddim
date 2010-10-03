@@ -10,9 +10,10 @@ from config import RiddimConfig
 class RiddimData(object):
 
     def __init__(self):
-        config = RiddimConfig(os.getcwd()).config
-        self.datafile = os.path.join(os.getcwd(),'data',
-                config.get('riddim','datafile'))
+        #self.datafile = os.path.join(self.cwd,'data',self.config.get('riddim','datafile'))
+        rc = RiddimConfig()
+        self.datafile = os.path.join(rc.cwd,'data',rc.config.get('riddim','datafile'))
+
 
     def __getitem__(self,key):
         try:

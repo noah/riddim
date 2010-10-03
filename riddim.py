@@ -37,12 +37,11 @@ from lib.xmlrpc import RiddimRPCRegisters, RiddimRPCClient
 
 class RiddimCLI(RiddimRPCClient):
     def __init__(self):
+        self.rc = RiddimConfig()
         self.data = RiddimData()
-        cwd = os.getcwd()
-        self.config = RiddimConfig(cwd).config
         # FIXME config
-        self.logfile = os.path.join(cwd,'log',self.config.get('riddim','logfile'))
-        self.pidfile = os.path.join(cwd,'var','run',self.config.get('riddim','pidfile'))
+        self.logfile = os.path.join(self.rc.cwd,'log',self.rc.config.get('riddim','logfile'))
+        self.pidfile = os.path.join(self.rc.cwd,'var','run',self.rc.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
 
         self.rpc = xmlrpclib.ServerProxy('http://%s:%s' % (self.data['hostname'],self.data['port']), allow_none=True)

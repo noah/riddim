@@ -41,6 +41,8 @@ class RiddimRPCRegisters(object):
                 if not re.search(regex,title):
                     playlist[i] = track
             self.data['playlist'] = playlist
+            lpl = len(self.data['playlist'].keys())
+            if self.data['index'] >= lpl: self.data['index'] = 0
         else:
             self.data['playlist'] = {}
 
