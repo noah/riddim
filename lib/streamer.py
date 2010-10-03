@@ -11,7 +11,7 @@ class RiddimStreamer(object):
     def __init__(self,request):
         self.data = RiddimData()
         self.playlist = RiddimPlaylist()
-        self.config = RiddimConfig(os.getcwd()).config
+        self.config = RiddimConfig().config
         self.request = request
         self.byte_count = 0
         self.total_bytes = 0

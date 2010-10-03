@@ -6,7 +6,7 @@ from lib.config import RiddimConfig
 
 class RiddimOptions(object):
     def __init__(self):
-        self.config = RiddimConfig(os.getcwd()).config
+        self.config = RiddimConfig().config
         self.op = OptionParser()
         self.op.disable_interspersed_args() # unix-style
         # boolean flags
