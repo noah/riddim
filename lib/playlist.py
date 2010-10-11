@@ -41,6 +41,7 @@ class RiddimPlaylist(object):
     
     def enqueue_list(self,path):
         results = []
+        print "Enqueuing %s" % path
         for base, dirs, files in os.walk(path):
             mp3 = fnmatch.filter(files,'*.[mM][pP]3')
             # TODO flac

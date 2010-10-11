@@ -122,3 +122,4 @@ class RiddimRPCClient(object):
 
     def enqueue(self,path):
         self.rpc.enqueue(path)
+        return self.rpc.query()

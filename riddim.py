@@ -39,7 +39,6 @@ class RiddimCLI(RiddimRPCClient):
     def __init__(self):
         self.rc = RiddimConfig()
         self.data = RiddimData()
-        # FIXME config
         self.logfile = os.path.join(self.rc.cwd,'log',self.rc.config.get('riddim','logfile'))
         self.pidfile = os.path.join(self.rc.cwd,'var','run',self.rc.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
@@ -88,7 +87,7 @@ class RiddimCLI(RiddimRPCClient):
         pid = self.pid()
         if pid:
             print "RiDDiM already running;  PID:  %s" % pid
-            print "If you think RiDDiM is not running, delete %s" % self.config.get('riddim','pidfile')
+            print "If you think RiDDiM is not running, delete %s" % self.rc.config.get('riddim','pidfile')
             sys.exit()
         else:
             if not self.o.foreground:
@@ -143,7 +142,7 @@ if __name__ == '__main__':
         #print flag
         if flag == 'enqueue':
             if not cli.pid(): cli.quit()
-            cli.enqueue(opts.enqueue)
+            print cli.enqueue(os.path.realpath(opts.enqueue))
         elif flag == 'index':
             print cli.index(opts.index)
         elif flag == 'clear':
