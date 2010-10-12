@@ -105,7 +105,6 @@ I ripped off some code from Amarok for the streaming logic (lib/streamer).
 TODO
 ---------------------------------------------------------------
 + Auth
-+ Scrobbling
 + Transcoding (flac, ogg, etc)
 + Web control
 + Crossfading
