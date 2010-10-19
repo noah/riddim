@@ -3,11 +3,11 @@ RiDDiM ~~ SHOUTcast on a diet
 
 Update -- 10/19/10
 ---------------------------------------------------------------
-        Most recently, I added flac on-the-fly transcoding to riddi.
+        Most recently, I added flac on-the-fly transcoding to riddim.
         This is in an alpha working state.  Simultaneously, I realized
         the code is rather bulky and needs to be rewritten in something
         else.  Either that or I need to learn python (:)).  So, I'm in
-        the process of rewritting riddim in ruby.  The project is called
+        the process of rewriting riddim in ruby.  The project is called
         reggae:
 
         http://github.com/noah/reggae
