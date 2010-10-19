@@ -18,7 +18,8 @@ class RiddimPlaylist(object):
         for i,track in pl.iteritems():
             # leader = "*" if int(i) == index and self.data['status'] == 'playing' else " "
             leader = "*" if int(i) == index else " "
-            new_pl.append(' '.join([leader,'%0*d' % (len(pl[len(pl)-1]),i+1),track['audio']['title']]))
+            new_pl.append(' '.join([leader,'%0*d' %
+                (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title']]))
         return '\n'.join(new_pl)
 
     def get_song(self):
@@ -39,7 +40,7 @@ class RiddimPlaylist(object):
             print "No song at index %s" % I
             return False
 
-    def files_by_pattern(path,pattern):
+    def files_by_pattern(self,path,pattern):
         results = []
         for base, dirs, files in os.walk(path):
             matches = fnmatch.filter(files, pattern)
@@ -50,7 +51,7 @@ class RiddimPlaylist(object):
     def enqueue_list(self,path):
         results = []
         print "Enqueuing %s" % path
-        return files_by_pattern(path, '*.[mM][pP]3') + files_by_pattern(path, '*.[fF][lL][aA][cC]3')
+        return self.files_by_pattern(path, '*.[mM][pP]3') + self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self,path):
         eL = self.enqueue_list(path)

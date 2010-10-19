@@ -2,6 +2,7 @@ import os
 import time
 import errno
 import socket
+import subprocess
 
 from lib.data import RiddimData
 from lib.config import RiddimConfig
@@ -46,21 +47,39 @@ class RiddimStreamer(object):
             print '> %s' % str(song['audio']['title'])
 
             try:
+                flac = False
                 # this loop gets its ideas about the shoutcast protocol from amarok
                 buffer              = 0
                 buffer_size         = 4096
                 metadata_interval   = self.config.getint('icy','metaint')
-                f = file(song['path'], 'r')
-                f.seek(song['audio']['start'])
+
+                print song
+                if song['audio']['mimetype'] == 'audio/mpeg':
+                    f = file(song['path'], 'r')
+                    f.seek(song['audio']['start'])
+                else:
+                    flac_pipe = subprocess.Popen(
+                            "/usr/bin/flac -d \"%s\" --stdout" % song['path'], 
+                            stdout=subprocess.PIPE,
+                            shell=True)
+                    mp3_pipe = subprocess.Popen(
+                            "/usr/bin/lame -V0 - -",
+                            stdout=subprocess.PIPE,
+                            shell=True,
+                            stdin = flac_pipe.stdout)
+                    f = mp3_pipe.stdout
+                    flac = True
+
                 self.dirty_meta = True
 
                 audio_size = song['audio']['size']
                 index_change = False
-                while f.tell() < audio_size:
+                while flac or (f.tell() < audio_size):
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
-                            self.request.send(self.get_meta(song))
+                            metadata = self.get_meta(song)
+                            self.request.send(metadata)
                         self.byte_count = 0
                     else:
                         if bytes_until_meta < buffer_size:
@@ -68,9 +87,11 @@ class RiddimStreamer(object):
                         else:
                             n_bytes = buffer_size
                         buffer = f.read(n_bytes)
+
                         self.request.send(buffer)
                         self.byte_count += len(buffer)
                         self.total_bytes += len(buffer)
+                        if len(buffer) == 0: break
 
                     # check for state change every 0.5MB (local I/O!)
                     # this sucks FIXME

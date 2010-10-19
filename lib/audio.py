@@ -83,9 +83,7 @@ class RiddimAudio(AudioUtil):
 
     def __init__(self,path):
         self.path = path
-
         self.corrupt = False
-
         self.mimetype = subprocess.Popen("/usr/bin/file -i \"%s\"" % path, shell=True, \
                 stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
 
@@ -107,7 +105,10 @@ class RiddimAudio(AudioUtil):
         return ' - '.join([tags[0],tags[2]])
 
     def bitrate(self):
-        return self.audio.info.bitrate
+        try:
+            self.audio.info.bitrate
+        except AttributeError:
+            print "No bitrate available for %s" % self.path
 
     def title(self):
         return ' - '.join(self.tags())

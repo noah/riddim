@@ -1,6 +1,21 @@
 RiDDiM ~~ SHOUTcast on a diet
 ==============================================================
 
+Update -- 10/19/10
+---------------------------------------------------------------
+        Most recently, I added flac on-the-fly transcoding to riddi.
+        This is in an alpha working state.  Simultaneously, I realized
+        the code is rather bulky and needs to be rewritten in something
+        else.  Either that or I need to learn python (:)).  So, I'm in
+        the process of rewritting riddim in ruby.  The project is called
+        reggae:
+
+        http://github.com/noah/reggae
+
+        Before you get your panties in a knot, this is all just a
+        learning experience for me.  These are not the songs you're
+        looking for.
+
 Synopsis
 ---------------------------------------------------------------
 
@@ -105,6 +120,4 @@ I ripped off some code from Amarok for the streaming logic (lib/streamer).
 TODO
 ---------------------------------------------------------------
 + Auth
-+ Transcoding (flac, ogg, etc)
 + Web control
-+ Crossfading
