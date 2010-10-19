@@ -42,8 +42,8 @@ class RiddimCLI(RiddimRPCClient):
         self.logfile = os.path.join(self.rc.cwd,'log',self.rc.config.get('riddim','logfile'))
         self.pidfile = os.path.join(self.rc.cwd,'var','run',self.rc.config.get('riddim','pidfile'))
         self.o = RiddimOptions()
-
-        self.rpc = xmlrpclib.ServerProxy('http://%s:%s' % (self.data['hostname'],self.data['port']), allow_none=True)
+        self.rpc = xmlrpclib.ServerProxy('http://%s:%s' %
+                (self.data['hostname'],self.o.options.port), allow_none=True)
 
     def kickoff(self,port):
         MINUTE=60
@@ -84,8 +84,12 @@ class RiddimCLI(RiddimRPCClient):
             return False
 
     def start(self):
+        port = self.o.port
+        if not port:
+            port=18944
+
         pid = self.pid()
-        if pid:
+        if pid and (port is 18944):
             print "RiDDiM already running;  PID:  %s" % pid
             print "If you think RiDDiM is not running, delete %s" % self.rc.config.get('riddim','pidfile')
             sys.exit()
@@ -96,9 +100,7 @@ class RiddimCLI(RiddimRPCClient):
             print "forked, PID: %d" % pid
             open(self.pidfile,'w').write(str(pid))
 
-        port = self.o.port
-        if not port:
-            port=18944
+        print "starting on %s" % port
         server,thread = self.kickoff(port)
         sys.exit(0)
 
@@ -136,10 +138,10 @@ if __name__ == '__main__':
 
     # handle flags
     opts = cli.o.options
-    #print opts
+    # print opts
     if cli.o.flag:
         flag = cli.o.flag
-        #print flag
+        print flag
         if flag == 'enqueue':
             if not cli.pid(): cli.quit()
             print cli.enqueue(os.path.realpath(opts.enqueue))

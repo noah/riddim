@@ -38,15 +38,19 @@ class RiddimPlaylist(object):
         except KeyError:
             print "No song at index %s" % I
             return False
+
+    def files_by_pattern(path,pattern):
+        results = []
+        for base, dirs, files in os.walk(path):
+            matches = fnmatch.filter(files, pattern)
+            results.extend(os.path.realpath(os.path.join(base, m)) for m in matches)
+        return results
+
     
     def enqueue_list(self,path):
         results = []
         print "Enqueuing %s" % path
-        for base, dirs, files in os.walk(path):
-            mp3 = fnmatch.filter(files,'*.[mM][pP]3')
-            # TODO flac
-            results.extend(os.path.realpath(os.path.join(base, f)) for f in mp3)
-        return results
+        return files_by_pattern(path, '*.[mM][pP]3') + files_by_pattern(path, '*.[fF][lL][aA][cC]3')
 
     def enqueue(self,path):
         eL = self.enqueue_list(path)
