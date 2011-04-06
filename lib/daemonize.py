@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys, os
 
 '''This module is used to fork the current process into a daemon.

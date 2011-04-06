@@ -54,10 +54,7 @@ class RiddimStreamer(object):
                 metadata_interval   = self.config.getint('icy','metaint')
 
                 print song
-                if song['audio']['mimetype'] == 'audio/mpeg':
-                    f = file(song['path'], 'r')
-                    f.seek(song['audio']['start'])
-                else:
+                if song['audio']['mimetype'] == 'audio/x-flac':
                     flac_pipe = subprocess.Popen(
                             "/usr/bin/flac -d \"%s\" --stdout" % song['path'], 
                             stdout=subprocess.PIPE,
@@ -69,6 +66,9 @@ class RiddimStreamer(object):
                             stdin = flac_pipe.stdout)
                     f = mp3_pipe.stdout
                     flac = True
+                else: # assume mp3
+                    f = file(song['path'], 'r')
+                    f.seek(song['audio']['start'])
 
                 self.dirty_meta = True
 
