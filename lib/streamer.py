@@ -45,6 +45,7 @@ class RiddimStreamer(object):
         return meta
 
     def stream(self, icy_client=False):
+        f = None
         song = None
         while True:
             if self.scrobble:
@@ -60,24 +61,30 @@ class RiddimStreamer(object):
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
 
             print '> %s' % str(song['audio']['title'])
-            import pprint
-            pprint.pprint(song)
-
+            #import pprint
+            #pprint.pprint(song)
 
             try:
+                # sorry code gods
                 flac = False
+
                 # this loop gets its ideas about the shoutcast protocol from amarok
                 buffer              = 0
                 buffer_size         = 4096
                 metadata_interval   = self.config.getint('icy','metaint')
 
+                try:
+                    f.close()
+                except:
+                    pass
+
                 if song['audio']['mimetype'] == 'audio/x-flac':
                     flac_pipe = subprocess.Popen(
-                            "/usr/bin/flac -d \"%s\" --stdout" % song['path'],
+                            "/usr/bin/flac --silent -d \"%s\" --stdout" % song['path'],
                             stdout=subprocess.PIPE,
                             shell=True)
                     mp3_pipe = subprocess.Popen(
-                            "/usr/bin/lame -V0 - -",
+                            "/usr/bin/lame --quiet -V0 - -",
                             stdout=subprocess.PIPE,
                             shell=True,
                             stdin = flac_pipe.stdout)

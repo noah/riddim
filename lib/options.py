@@ -44,7 +44,7 @@ class RiddimOptions(object):
             self.port = self.options.port
         else:
             self.flag = self.check_flag()
-    
+
     def check_signal(self):
         valid_signals = ['stop','start','restart','status']
         if self.options.signal and self.options.signal in valid_signals:

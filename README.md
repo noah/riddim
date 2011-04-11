@@ -1,8 +1,19 @@
 ## Introduction 
 
-RiDDiM is an audio streaming server written in python.  It maintains
-an internal list of mp3s that it plays in sequential order, just
-like a digital jukebox.  It accepts two types of connections:
+RiDDiM is an audio streaming server written in python.  It has the
+following features:
+
+        + Multithreaded, supports multiple clients
+        + FLAC transcoding (lame)
+        + Low memory footprint
+        + Track scrobbling to Last.fm
+
+
+## Networking
+
+RiDDiM maintains an internal list of mp3s that it plays in sequential
+order, just like a digital jukebox.  It accepts two types of
+connections:
 
 1.  HTTP GET requests
 1.  XMLRPC requests

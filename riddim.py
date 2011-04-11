@@ -59,7 +59,7 @@ class RiddimCLI(RiddimRPCClient):
                         target=riddim_server.serve_forever)
                 riddim_server_thread.setDaemon(False)
                 riddim_server_thread.start()
-                print("RiddimServer running at http://%s:%s, in thread:%s" %
+                print("RiDDiM running at http://%s:%s, in thread:%s" %
                         (self.ip,str(self.port),riddim_server_thread.getName()))
                 self.data['started_on'] = time.time()
                 self.data['port'] = self.port
@@ -72,7 +72,7 @@ class RiddimCLI(RiddimRPCClient):
             # FIXME make this not suck at error handling
             # socket busy OK; permission denied (low port) NOT
             except Exception as e:
-                print "RiddimServer not running %s" % e
+                print "RiDDiM not running %s" % e
                 print "Will try to start again in %d seconds." % INTERVAL
                 time.sleep(INTERVAL)
         return (riddim_server, riddim_server_thread)

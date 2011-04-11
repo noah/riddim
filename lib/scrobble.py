@@ -25,15 +25,6 @@ class ScrobbleItem:
 def escape(str):
     return unquote(str).decode('utf-8')
 
-def get_mbid(file):
-    try:
-        audio = ID3(file)
-        ufid = audio.get(u'UFID:http://musicbrainz.org')
-        return ufid.data if ufid else ''
-    except Exception, e:
-        logger.debug('get_mbid failed: %s', e)
-        return ''
-
 class RiddimScrobbler(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
@@ -60,7 +51,6 @@ class RiddimScrobbler(threading.Thread):
                     type = scrobble_item.type
 
                     (artist, album, track) = [escape(item) for item in song['audio']['tags']]
-                    mbid = get_mbid(song['path'])
 
                     if type == NOW_PLAYING:
                         print "scrobbling now playing %s %s %s" % (artist, track, album)
@@ -75,14 +65,15 @@ class RiddimScrobbler(threading.Thread):
                     elif type == PLAYED:
                         # See: http://exhuma.wicked.lu/projects/python/scrobbler/api/public/scrobbler-module.html#login
                         if song['audio']['length'] > 30:
-                            print "scrobbling played %s %s %s %s" % (artist, track, album, mbid)
+                            print "scrobbling played %s %s %s %s" %\
+                                    (artist, track, album, song['audio']['length'])
                             self.login()
                             scrobbler.submit(
                                 artist,
                                 track,
                                 int(time.mktime(datetime.datetime.utcnow().timetuple())),
                                 source=escape('P'),
-                                length=song['audio']['length'],
+                                length=int(song['audio']['length']),
                                 album=escape(album),
                             )
                         scrobbler.flush()
