@@ -107,12 +107,6 @@ contents:
     username='Your Username'
     password='Your Password'
 
-Where password is an md5 hash of your password:
-
-  # >>> from hashlib import md5
-  # >>> md5('password').hexdigest()
-  # '5f4dcc3b5aa765d61d8327deb882cf99'
-
 ## Contributors
 
 I ripped off some code from Amarok for the streaming logic (lib/streamer).
