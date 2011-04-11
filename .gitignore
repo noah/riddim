@@ -3,3 +3,4 @@
 audio
 *.pyc
 data
+scrobbler.cfg

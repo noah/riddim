@@ -49,7 +49,7 @@ class RiddimData(object):
                 f.close()
             if data is None: data = {}
             return data
-    
+
     def write(self,data):
         with lock:
             return pickle.dump(data,open(self.datafile,'w'))

@@ -1,22 +1,24 @@
-import os
-import time
-import errno
-import socket
-import subprocess
+import os, time, errno, socket, subprocess, Queue
+import mad
 
 from lib.data import RiddimData
 from lib.config import RiddimConfig
 from lib.playlist import RiddimPlaylist
+from lib.scrobble import RiddimScrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
 
 class RiddimStreamer(object):
     def __init__(self,request):
-        self.data = RiddimData()
-        self.playlist = RiddimPlaylist()
-        self.config = RiddimConfig().config
-        self.request = request
-        self.byte_count = 0
-        self.total_bytes = 0
+        self.data           = RiddimData()
+        self.playlist       = RiddimPlaylist()
+        self.config         = RiddimConfig().config
+        self.request        = request
+        self.byte_count     = 0
+        self.total_bytes    = 0
+        self.scrobble       = self.config.getboolean('riddim', 'scrobble')
 
+        if self.scrobble:
+            self.scrobble_queue = Queue.Queue()
+            RiddimScrobbler(self.scrobble_queue).start()
 
     # ~ It's always a good day for smoking crack at Nullsoft!
     # ~ See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
@@ -25,26 +27,42 @@ class RiddimStreamer(object):
 
     def get_meta(self,song):
         # lifted from amarok
-        metadata = "%cStreamTitle='%s';StreamUrl='%s';%s"
-        padding = '\x00' * 16
+        metadata    = "%cStreamTitle='%s';StreamUrl='%s';%s"
+        padding     = '\x00' * 16
+        meta        = None
         if self.dirty_meta:
-            stream_title = str(song['audio']['title'])
-            stream_url = self.config.get('riddim','url')
+            stream_title    = str(song['audio']['title'])
+            stream_url      = self.config.get('riddim','url')
 
             # 28 is the number of static characters in metadata (!)
-            length = len(stream_title) + len(stream_url) + 28
-            pad = 16 - length % 16
-            meta = metadata % (((length+pad)/16),stream_title,stream_url,padding[:pad])
+            length          = len(stream_title) + len(stream_url) + 28
+            pad             = 16 - length % 16
+            meta            = metadata % (((length+pad)/16),stream_title,stream_url,padding[:pad])
             self.dirty_meta = False
-            return meta
         else:
-            return '\x00'
+            meta = '\x00'
 
-    def stream(self,icy_client=False):
+        return meta
+
+    def stream(self, icy_client=False):
+        song = None
         while True:
+            if self.scrobble:
+                if song:
+                    print "enqueued played"
+                    self.scrobble_queue.put(ScrobbleItem(PLAYED, song)) # just played one . . . scrobble it
+
+            # new song
             song = self.playlist.get_song()
             if not song: return
+            if self.scrobble:
+                print "enqueued now playing"
+                self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
+
             print '> %s' % str(song['audio']['title'])
+            import pprint
+            pprint.pprint(song)
+
 
             try:
                 flac = False
@@ -53,10 +71,9 @@ class RiddimStreamer(object):
                 buffer_size         = 4096
                 metadata_interval   = self.config.getint('icy','metaint')
 
-                print song
                 if song['audio']['mimetype'] == 'audio/x-flac':
                     flac_pipe = subprocess.Popen(
-                            "/usr/bin/flac -d \"%s\" --stdout" % song['path'], 
+                            "/usr/bin/flac -d \"%s\" --stdout" % song['path'],
                             stdout=subprocess.PIPE,
                             shell=True)
                     mp3_pipe = subprocess.Popen(

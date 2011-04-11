@@ -1,11 +1,11 @@
-import os
-import subprocess
+import os, subprocess
+import mad
 
 try:
     # easyid3 maps the real id3 standard tag names to the same as the flac ones
     from mutagen.mp3 import MP3
     from mutagen.flac import FLAC
-    from mutagen.easyid3 import EasyID3 
+    from mutagen.easyid3 import EasyID3
 except:
     print """
     You need mutagen
@@ -81,7 +81,7 @@ class AudioUtil(object):
 
 class RiddimAudio(AudioUtil):
 
-    def __init__(self,path):
+    def __init__(self, path):
         self.path = path
         self.corrupt = False
         self.mimetype = subprocess.Popen("/usr/bin/file -i \"%s\"" % path, shell=True, \
@@ -89,10 +89,10 @@ class RiddimAudio(AudioUtil):
 
         if self.mimetype == 'audio/x-flac':
             self.audio = FLAC(path)
+        elif self.mimetype == 'audio/mpeg':
+            self.audio = MP3(path, ID3=EasyID3)
         else:
-            if self.mimetype != 'audio/mpeg':
-                print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
-            self.audio = MP3(path,ID3=EasyID3)
+            print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
 
     def __getitem__(self,key):
         try:
@@ -106,9 +106,16 @@ class RiddimAudio(AudioUtil):
 
     def bitrate(self):
         try:
-            self.audio.info.bitrate
+            return self.audio.info.bitrate
         except AttributeError:
             print "No bitrate available for %s" % self.path
+
+    def tracknumber(self):
+        try:
+            return self.audio.tracknumber
+        except AttributeError:
+            print "No tracknumber available for %s" % self.path
+        return 0
 
     def title(self):
         return ' - '.join(self.tags())
@@ -123,6 +130,20 @@ class RiddimAudio(AudioUtil):
             print "Couldn't parse mimetype for %s" % self.path
             self.corrupt = True
         return [artist,album,title]
+
+    def length(self):
+        length = 0
+        if self.mimetype == 'audio/mpeg':
+            try:
+                length = (mad.MadFile(self.path).total_time() / 1000)
+            except Exception, e:
+                print "Couldn't get time for %s: %s" % (self.path, e)
+        elif self.mimetype == 'audio/x-flac':
+            try:
+                length = self.audio.info.length
+            except:
+                print "Couldn't get time for %s" % self.path
+        return length
 
     def size(self):
         return os.stat(self.path)[6]
@@ -144,8 +165,10 @@ class RiddimAudio(AudioUtil):
                 'tags': self.tags(),
                 'title': self.title(),
                 'bitrate': self.bitrate(),
+                'length' : self.length(),
                 'start': self.start(),
                 'mimetype': self.mimetype,
+                'tracknumber' : self.tracknumber()
         }
 
 if  __name__ == '__main__':

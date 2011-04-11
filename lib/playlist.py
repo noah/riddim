@@ -47,7 +47,6 @@ class RiddimPlaylist(object):
             results.extend(os.path.realpath(os.path.join(base, m)) for m in matches)
         return results
 
-    
     def enqueue_list(self,path):
         results = []
         print "Enqueuing %s" % path

@@ -1,29 +1,47 @@
-RiDDiM ~~ SHOUTcast on a diet
-==============================================================
+## Introduction 
 
-Update -- 10/19/10
----------------------------------------------------------------
-        Most recently, I added flac on-the-fly transcoding to riddim.
-        This is in an alpha working state.  Simultaneously, I realized
-        the code is rather bulky and needs to be rewritten in something
-        else.  Either that or I need to learn python (:)).  So, I'm in
-        the process of rewriting riddim in ruby.  The project is called
-        reggae:
+RiDDiM is an audio streaming server written in python.  It maintains
+an internal list of mp3s that it plays in sequential order, just
+like a digital jukebox.  It accepts two types of connections:
 
-        http://github.com/noah/reggae
+1.  HTTP GET requests
+1.  XMLRPC requests
 
-        Before you get your panties in a knot, this is all just a
-        learning experience for me.  These are not the songs you're
-        looking for.
+In the first instance, it begins streaming mp3 data to the client.
+In the second instance, it attempts to interpret the request as a
+command.
 
-Synopsis
----------------------------------------------------------------
+Commands are used to manipulate the internal playlist state
+(enqueue, dequeue, display).
+
+## Synopsis
+
+The first thing you'll probably want to do is edit the general config
+file. 
 
         % $EDITOR riddim.cfg
+
+RiDDiM can be run either in the foreground (so that you can see
+debugging output) or as a backgrounded process.  This is controlled by
+the -f flag.  Like apachectl, riddim can be started, stopped, and
+restarted by passing the -k flag.
+
         % ./riddim.py -k start
+
+Next, queue up some tracks:
+
+
         % ./riddim.py --enqueue ./path/to/bob_marley
+
+Connect a client:
+
         % mplayer http://localhost:18944
+
+(Music should now be coming out of your speakers).  Display the
+playlist:
+
         % ./riddim.py -Q     
+
 
         -=[RiDDiM]=-  uptime:  00:00:13
         playing:  Bob Marley & The Wailers - Stop That Train
@@ -39,8 +57,7 @@ Synopsis
           Bob Marley & The Wailers - Get Up Stand Up
           Bob Marley & The Wailers - Kinky Reggae
  
-"Advanced" Use
----------------------------------------------------------------
+## "Advanced" Usage
 
         % ./riddim.py -h
         Usage: riddim.py [options]
@@ -67,8 +84,7 @@ Synopsis
 Everything is implemented in the client except for shuffle, repeat, and play (which is implicit in connecting to the stream).
 
 
-Dependencies
----------------------------------------------------------------
+## Dependencies
 
         % python --version
         Python 2.6.5
@@ -76,48 +92,32 @@ Dependencies
         % pacman -Q mutagen  
         mutagen 1.19-1
 
-Motivation
----------------------------------------------------------------
-All of my mp3s are at my house, on my server.  When I'm elsewhere, I like to
-listen to Radio Paradise, soma.fm, etc.  But sometimes those stations have a
-sucky patch.  Or I just really need to hear some AC/DC.  Previously I'd been
-mounting my mp3s over sshfs, which is _really_ slow, and thinking a lot about
-setting up SHOUTcast.  Unfortunately, SHOUTcast seems to require a Ph.D. in
-voodoo magic to set up and has way more bellz 'n whistlez than I need.
+        % pacman -Q pymad
+        pymad 0.6-3
 
+## Optional Dependencies
+    
+        # pip install scrobbler
 
-Caveat Emptor
----------------------------------------------------------------
-This code may suck.
+If you want to scrobble tracks, you will need to set scrobble=True in
+riddim.cfg and also create a scrobbler.cfg file with the following
+contents:
 
+    [scrobbler]
+    username='Your Username'
+    password='Your Password'
 
-License 
----------------------------------------------------------------
-Copyright (c) 2010 Noah K. Tilton <noah@downbe.at>
+Where password is an md5 hash of your password:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  # >>> from hashlib import md5
+  # >>> md5('password').hexdigest()
+  # '5f4dcc3b5aa765d61d8327deb882cf99'
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+## Contributors
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-Contributors
----------------------------------------------------------------
 I ripped off some code from Amarok for the streaming logic (lib/streamer).
 
-TODO
----------------------------------------------------------------
+## TODO
+
 + Auth (signing !)
 + Web control
