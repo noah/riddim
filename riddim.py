@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 """
-Copyright (c) <2010> <Noah K. Tilton> <noah@downbe.at>
+Copyright (c) <2010> <Noah K. Tilton> <noahktilton@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -59,8 +59,7 @@ class RiddimCLI(RiddimRPCClient):
                         target=riddim_server.serve_forever)
                 riddim_server_thread.setDaemon(False)
                 riddim_server_thread.start()
-                print("RiDDiM running at http://%s:%s, in thread:%s" %
-                        (self.ip,str(self.port),riddim_server_thread.getName()))
+                print("RiDDiM running at http://%s:%s" % (self.ip,str(self.port)))
                 self.data['started_on'] = time.time()
                 self.data['port'] = self.port
                 self.data['hostname'] = self.ip
@@ -97,10 +96,10 @@ class RiddimCLI(RiddimRPCClient):
             if not self.o.foreground:
                 daemonize(stderr=self.logfile,stdout=self.logfile)
             pid = os.getpid()
-            print "forked, PID: %d" % pid
+            #print "forked, PID: %d" % pid
             open(self.pidfile,'w').write(str(pid))
 
-        print "starting on %s" % port
+        #print "starting on %s" % port
         server,thread = self.kickoff(port)
         sys.exit(0)
 
