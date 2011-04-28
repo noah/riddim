@@ -71,7 +71,7 @@ class RiddimScrobbler(threading.Thread):
                             scrobbler.submit(
                                 artist,
                                 track,
-                                int(time.mktime(datetime.datetime.utcnow().timetuple())),
+                                int(time.mktime(datetime.datetime.now().timetuple())),
                                 source=escape('P'),
                                 length=int(song['audio']['length']),
                                 album=escape(album),
