@@ -5,7 +5,7 @@ from lib.data import RiddimData
 from lib.playlist import RiddimPlaylist
 
 class RiddimRPCRegisters(object):
-    """ 
+    """
         These are the commands that the local server accepts via XMLRPC
         from remote clients
     """
@@ -20,7 +20,7 @@ class RiddimRPCRegisters(object):
 %s:  %s
 %s tracks %s
 %s
-""" %   ( 
+""" %   (
         self.uptime(),
         self.status(),
         self.song(),
@@ -43,7 +43,7 @@ class RiddimRPCRegisters(object):
             playlist = {}
             for i,track in self.data['playlist'].iteritems():
                 title = track['audio']['title']
-                if not re.search(regex,title):
+                if not re.search(regex, title):
                     playlist[i] = track
             self.data['playlist'] = playlist
             lpl = len(self.data['playlist'].keys())
@@ -60,7 +60,7 @@ class RiddimRPCRegisters(object):
 
     def song(self):
         return self.data['song']
-    
+
     def status(self):
         return self.data['status']
 
