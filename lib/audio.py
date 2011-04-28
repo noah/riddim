@@ -19,7 +19,7 @@ except:
 class AudioUtil(object):
     ################################################################################
     #
-    #  Copyright (C) 2010  Noah K. Tilton <noah@downbe.at>
+    #  Copyright (C) 2010  Noah K. Tilton <noah@0x7be.org>
     #  Copyright (C) 2002-2005  Travis Shirk <travis@pobox.com>
     #  Copyright (C) 2001  Ryan Finne <ryan@finnie.org>
     #
