@@ -64,7 +64,7 @@ class RiddimScrobbler(threading.Thread):
                         # what we want.
                     elif type == PLAYED:
                         # See: http://exhuma.wicked.lu/projects/python/scrobbler/api/public/scrobbler-module.html#login
-                        if song['audio']['length'] > 30:
+                        if (song['audio']['length'] > 30) and artist and track:
                             print "scrobbling played %s %s %s %s" %\
                                     (artist, track, album, song['audio']['length'])
                             self.login()
@@ -76,7 +76,7 @@ class RiddimScrobbler(threading.Thread):
                                 length=int(song['audio']['length']),
                                 album=escape(album),
                             )
-                        scrobbler.flush()
+                            scrobbler.flush()
                 except Exception as e:
                     print "scrobble error: %s" % e
                     # put it back
