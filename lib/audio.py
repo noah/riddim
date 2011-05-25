@@ -89,10 +89,13 @@ class RiddimAudio(AudioUtil):
 
         if self.mimetype == 'audio/x-flac':
             self.audio = FLAC(path)
-        elif self.mimetype == 'audio/mpeg':
-            self.audio = MP3(path, ID3=EasyID3)
         else:
-            print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
+            # assume mp3
+            if self.mimetype != 'audio/mpeg':
+                print "Mimetype %s unsupported %s" % (self.mimetype, self.path)
+            # Handle it anyway --  sometimes mp3 will have content-type
+            # application/octet-stream, but this is ok.
+            self.audio = MP3(path, ID3=EasyID3)
 
     def __getitem__(self,key):
         try:
@@ -127,6 +130,7 @@ class RiddimAudio(AudioUtil):
             album = str(self.audio['album'][0])
             title = str(self.audio['title'][0])
         except:
+            print self.audio
             print "Couldn't parse mimetype for %s" % self.path
             self.corrupt = True
         return [artist,album,title]
