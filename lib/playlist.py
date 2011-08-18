@@ -2,6 +2,7 @@ import os
 import fnmatch
 import itertools
 
+from lib.logger import log
 from lib.data import RiddimData
 from lib.audio import RiddimAudio
 
@@ -34,10 +35,10 @@ class RiddimPlaylist(object):
             self.data['song'] = song['audio']['title']
             return song
         except IndexError:
-            print "No song at index %s" % I
+            log.exception("No song at index %s" % I)
             return False
         except KeyError:
-            print "No song at index %s" % I
+            log.exception("No song at index %s" % I)
             return False
 
     def files_by_pattern(self,path,pattern):
@@ -49,8 +50,9 @@ class RiddimPlaylist(object):
 
     def enqueue_list(self,path):
         results = []
-        print "Enqueuing %s" % path
-        return self.files_by_pattern(path, '*.[mM][pP]3') + self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
+        log.info("Enqueueing %s" % path)
+        return self.files_by_pattern(path, '*.[mM][pP]3') + \
+               self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self,path):
         eL = self.enqueue_list(path)

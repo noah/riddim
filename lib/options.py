@@ -31,7 +31,7 @@ class RiddimOptions(object):
 
         for short,v in self.flags.iteritems():
             long, help, action, default = v
-            self.op.add_option(short,long,action=action,help=help,default=default) 
+            self.op.add_option(short,long,action=action,help=help,default=default)
         prune = ['-P']
         for p in prune:
             del self.flags[p]

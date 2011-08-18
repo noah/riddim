@@ -11,27 +11,27 @@ from lib.streamer import RiddimStreamer
 class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
     def do_HEAD(self,icy_client):
-        if icy_client:
-            self.send_response(200,"ICY")
-            config = RiddimConfig().config
-            # fixme verbose
-            headers = {
-                'icy-notice1'   : config.get('icy','notice1'),
-                'icy-notice2'   : config.get('icy','notice2'),
-                'icy-name'      : config.get('icy','name',0,
-                                    {'hostname': socket.gethostname()}),
-                'icy-genre'     : config.get('icy','genre'),
-                'icy-url'       : config.get('icy','url'),
-                'icy-pub'       : config.getboolean('icy','pub'),
-                #'icy-br'        : 128,
-                'icy-metaint'   : config.getint('icy','metaint'),
-                'content-type'  : config.get('icy','content_type')
-            }
-            for k,v, in headers.iteritems():
-                self.send_header(k,v)
-        else:
-            self.send_response(200)
-            self.send_header('Content-Type', 'audio/x-mpegurl')
+        #if icy_client:
+        self.send_response(200,"ICY")
+        config = RiddimConfig().config
+        # fixme verbose
+        headers = {
+            'icy-notice1'   : config.get('icy','notice1'),
+            'icy-notice2'   : config.get('icy','notice2'),
+            'icy-name'      : config.get('icy','name',0,
+                                {'hostname': socket.gethostname()}),
+            'icy-genre'     : config.get('icy','genre'),
+            'icy-url'       : config.get('icy','url'),
+            'icy-pub'       : config.getboolean('icy','pub'),
+            #'icy-br'        : 128,
+            'icy-metaint'   : config.getint('icy','metaint'),
+            'content-type'  : config.get('icy','content_type')
+        }
+        for k,v, in headers.iteritems():
+            self.send_header(k,v)
+        #else:
+        #    self.send_response(200)
+        #    self.send_header('Content-Type', 'audio/x-mpegurl')
         self.end_headers()
 
     def do_POST(self):

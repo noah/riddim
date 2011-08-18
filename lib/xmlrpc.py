@@ -1,6 +1,6 @@
-import re
-import copy
-import time
+import os, re, copy, time
+
+from lib.logger import log
 from lib.data import RiddimData
 from lib.playlist import RiddimPlaylist
 
@@ -90,8 +90,11 @@ class RiddimRPCRegisters(object):
     #     return self.query()
 
     def enqueue(self,path):
-        rp = RiddimPlaylist()
-        rp.enqueue(path)
+        try:
+            rp = RiddimPlaylist()
+            rp.enqueue(os.path.realpath(path))
+        except Exception, e:
+            log.exception(e)
 
 class RiddimRPCClient(object):
     """ XMLRPC client wrappers """

@@ -6,6 +6,8 @@ from lib.config import RiddimConfig
 from lib.playlist import RiddimPlaylist
 from lib.scrobble import RiddimScrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
 
+from lib.logger import log
+
 class RiddimStreamer(object):
     def __init__(self,request):
         self.data           = RiddimData()
@@ -31,13 +33,14 @@ class RiddimStreamer(object):
         padding     = '\x00' * 16
         meta        = None
         if self.dirty_meta:
-            stream_title    = str(song['audio']['title'])
+            stream_title    = song['audio']['title'].encode('ascii','ignore')
             stream_url      = self.config.get('riddim','url')
 
             # 28 is the number of static characters in metadata (!)
             length          = len(stream_title) + len(stream_url) + 28
             pad             = 16 - length % 16
-            meta            = metadata % (((length+pad)/16),stream_title,stream_url,padding[:pad])
+            what = padding[:pad]
+            meta            = metadata % (((length+pad)/16),stream_title,stream_url,what)
             self.dirty_meta = False
         else:
             meta = '\x00'
@@ -50,17 +53,17 @@ class RiddimStreamer(object):
         while True:
             if self.scrobble:
                 if song:
-                    print "enqueued played"
+                    log.debug("enqueued played")
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song)) # just played one . . . scrobble it
 
             # new song
             song = self.playlist.get_song()
             if not song: return
             if self.scrobble:
-                print "enqueued now playing"
+                log.debug("enqueued now playing")
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
 
-            print '> %s' % str(song['audio']['title'])
+            log.debug('> %s' % song['audio']['title'])
             #import pprint
             #pprint.pprint(song)
 
@@ -98,11 +101,13 @@ class RiddimStreamer(object):
 
                 audio_size = song['audio']['size']
                 index_change = False
+                i=0
                 while flac or (f.tell() < audio_size):
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
+                            #lf.write("sent %s [%s]\n" % (metadata, len(metadata)))
                             self.request.send(metadata)
                         self.byte_count = 0
                     else:
@@ -112,10 +117,13 @@ class RiddimStreamer(object):
                             n_bytes = buffer_size
                         buffer = f.read(n_bytes)
 
+                        #lf.write("sent buffer [%s]\n" % len(buffer))
                         self.request.send(buffer)
                         self.byte_count += len(buffer)
                         self.total_bytes += len(buffer)
                         if len(buffer) == 0: break
+                        #log.debug("%s wrote %s [%s]\n" % (i, len(buffer), self.byte_count))
+                    i+=1
 
                     # check for state change every 0.5MB (local I/O!)
                     # this sucks FIXME
@@ -123,7 +131,7 @@ class RiddimStreamer(object):
                         #print "self.byte_count:  %s" % self.total_bytes
                         if self.data['status'] == 'stopped':
                             self.data['song'] == ''
-                            print "RiDDiM stopped."
+                            log.debug("RiDDiM stopped.")
                             return
                         # if we need to skip, reset the flag(s)
                         if self.data['index_changed']:
@@ -138,9 +146,9 @@ class RiddimStreamer(object):
             except IOError, e:
                 self.data['song'] = None
                 if e.errno == errno.EPIPE:
-                    print "Broken pipe"
+                    log.exception("Broken pipe")
                 elif e.errno == errno.ECONNRESET:
-                    print "Connection reset by peer"
+                    log.exception("Connection reset by peer")
                 else:
-                    print errno.errorcode[e.errno]
+                    log.exception(errno.errorcode[e.errno])
                 break # while

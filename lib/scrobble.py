@@ -10,6 +10,8 @@ except ImportError:
     % pip install scrobbler"""
     sys.exit(-1)
 
+from lib.logger import log
+
 NOW_PLAYING=0
 PLAYED=1
 
@@ -23,7 +25,7 @@ class ScrobbleItem:
         self.song = song
 
 def escape(str):
-    return unquote(str).decode('utf-8')
+    return unquote(str)
 
 class RiddimScrobbler(threading.Thread):
     def __init__(self, queue):
@@ -39,7 +41,7 @@ class RiddimScrobbler(threading.Thread):
         try:
             scrobbler.login(user=username, password=password)
         except Exception as e:
-            print "Couldn't login: %s" % e
+            log.exception("Couldn't login: %s" % e)
 
     def run(self):
         # well this is just fugly.  call it "experimental"
@@ -53,7 +55,8 @@ class RiddimScrobbler(threading.Thread):
                     (artist, album, track) = [escape(item) for item in song['audio']['tags']]
 
                     if type == NOW_PLAYING:
-                        print "scrobbling now playing %s %s %s" % (artist, track, album)
+                        log.debug("scrobbling now playing %s %s %s" %\
+                                (artist, track, album))
                         self.login()
                         scrobbler.now_playing(
                                 artist,
@@ -65,8 +68,8 @@ class RiddimScrobbler(threading.Thread):
                     elif type == PLAYED:
                         # See: http://exhuma.wicked.lu/projects/python/scrobbler/api/public/scrobbler-module.html#login
                         if (song['audio']['length'] > 30) and len(artist) and len(track):
-                            print "scrobbling played %s %s %s %s" %\
-                                    (artist, track, album, song['audio']['length'])
+                            log.debug("scrobbling played %s %s %s %s" %\
+                                    (artist, track, album, song['audio']['length']))
                             self.login()
                             scrobbler.submit(
                                 artist,
@@ -78,7 +81,7 @@ class RiddimScrobbler(threading.Thread):
                             )
                             scrobbler.flush()
                 except Exception as e:
-                    print "scrobble error: %s" % e
+                    log.exception("scrobble error: %s" % e)
                     # put it back
                     self.queue.put(scrobble_item)
             except Queue.Empty:
