@@ -18,9 +18,11 @@ class RiddimPlaylist(object):
         new_pl = []
         for i,track in pl.iteritems():
             # leader = "*" if int(i) == index and self.data['status'] == 'playing' else " "
-            leader = "*" if int(i) == index else " "
-            new_pl.append(' '.join([leader,'%0*d' %
-                (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title']]))
+            pre = post = ""
+            if int(i) == index:
+                pre     = "* \033[92m"
+                post    = "\033[0m"
+            new_pl.append(' '.join([pre, '%0*d' % (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title'], post]))
         return '\n'.join(new_pl)
 
     def __getitem__(self,key):
