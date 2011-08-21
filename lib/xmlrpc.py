@@ -16,7 +16,7 @@ class RiddimRPCRegisters(object):
 
     def query(self):
 
-        return """-=[RiDDiM]=-  uptime:  %s
+        return """[riddim]  uptime:  %s
 %s:  %s
 %s tracks %s
 %s
@@ -33,28 +33,37 @@ class RiddimRPCRegisters(object):
         return time.strftime('%H:%M:%S',time.gmtime(time.time()-self.data['started_on']))
 
     def index(self,index):
-        self.data['index'] = int(index)-1
-        self.data['index_changed'] = True
+        try:
+            self.data['index'] = int(index)-1
+            self.data['index_changed'] = True
+        except ValueError:
+            return "``%s'' is not an integer" % index
+
         return self.query()
 
     def clear(self,regex=None):
-        if regex:
-            regex = re.compile(regex,re.IGNORECASE)
-            playlist = {}
-            for i,track in self.data['playlist'].iteritems():
-                title = track['audio']['title']
+
+        if regex:       # user passed in a regex
+            regex       = re.compile(regex,re.IGNORECASE)
+            playlist    = {}
+            pl_keys     = sorted(self.data['playlist'].keys())
+            i           = 0
+            for pl_key in pl_keys:
+                title = self.data['playlist'][pl_key]['audio']['title']
+                # If the track does not match the removal regex (i.e.,
+                # should be kept), then append it and increment the
+                # index
                 if not re.search(regex, title):
-                    playlist[i] = track
+                    playlist[i] = self.data['playlist'][pl_key]
+                    i = i+1
+
             self.data['playlist'] = playlist
             lpl = len(self.data['playlist'].keys())
             if self.data['index'] >= lpl: self.data['index'] = 0
-        else:
-            self.data['playlist'] = {}
 
-        #try:
-        #    self.data['index'] = sorted(self.data['playlist'].keys())[0]
-        #except IndexError:
-        #    self.data['index'] = 0
+        else:
+            # Clear everything
+            self.data['playlist'] = {}
 
         return self.query()
 
@@ -92,7 +101,7 @@ class RiddimRPCRegisters(object):
     def enqueue(self,path):
         try:
             rp = RiddimPlaylist()
-            rp.enqueue(os.path.realpath(path))
+            rp.enqueue(path)
         except Exception, e:
             log.exception(e)
 
@@ -124,5 +133,6 @@ class RiddimRPCClient(object):
     #    return self.rpc.previous(n)
 
     def enqueue(self,path):
-        self.rpc.enqueue(path)
+        p = os.path.realpath(os.path.relpath(path, self.cwd))
+        self.rpc.enqueue(p)
         return self.rpc.query()

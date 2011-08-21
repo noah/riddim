@@ -10,7 +10,8 @@ from lib.logger import log, fh
 
 class RiddimCLI(RiddimRPCClient):
 
-    def __init__(self):
+    def __init__(self, cwd):
+        self.cwd = cwd
         self.rc = RiddimConfig()
         self.data = RiddimData()
         #self.logfile = os.path.join(self.rc.cwd,'log',self.rc.config.get('riddim','logfile'))
@@ -69,8 +70,7 @@ class RiddimCLI(RiddimRPCClient):
                     self.rc.config.get('riddim','pidfile'))
             sys.exit()
         else:
-            if not self.o.foreground:
-                daemonize(stderr=fh,stdout=fh)
+            if not self.o.foreground: daemonize()
             pid = os.getpid()
             #print "forked, PID: %d" % pid
             open(self.pidfile,'w').write(str(pid))

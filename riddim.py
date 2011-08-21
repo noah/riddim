@@ -29,7 +29,7 @@ from lib.cli import RiddimCLI
 
 if __name__ == '__main__':
 
-    cli = RiddimCLI()
+    cli = RiddimCLI( __file__ )
 
     try: # handle init signals
         {

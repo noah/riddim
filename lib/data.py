@@ -12,16 +12,15 @@ class RiddimData(object):
     def __init__(self):
         #self.datafile = os.path.join(self.cwd,'data',self.config.get('riddim','datafile'))
         rc = RiddimConfig()
-        self.datafile = os.path.join(rc.cwd,'data',rc.config.get('riddim','datafile'))
+        self.datafile = os.path.join(rc.cwd, 'data', rc.config.get('riddim','datafile'))
 
-
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         try:
             return self.read()[key]
         except KeyError:
             return None
 
-    def __setitem__(self,key,value):
+    def __setitem__(self, key, value):
         D = self.read()
         D[key] = value
         self.write(D)
@@ -29,7 +28,7 @@ class RiddimData(object):
     def truncate(self):
         with lock:
             try:
-                f = open(self.datafile,'w')
+                f = open(self.datafile, 'w')
                 return True
             except:
                 return False
@@ -38,21 +37,21 @@ class RiddimData(object):
         with lock:
             data = None
             try:
-                f = open(self.datafile,'r')
+                f = open(self.datafile, 'r')
                 data = pickle.load(f)
                 f.close()
             except IOError:
-                f = open(self.datafile,'w')
+                f = open(self.datafile, 'w')
                 f.close()
             except EOFError:
-                f = open(self.datafile,'w')
+                f = open(self.datafile, 'w')
                 f.close()
             if data is None: data = {}
             return data
 
-    def write(self,data):
+    def write(self, data):
         with lock:
-            return pickle.dump(data,open(self.datafile,'w'))
+            return pickle.dump(data,open(self.datafile, 'w'))
 
 if __name__ == '__main__':
     import pprint

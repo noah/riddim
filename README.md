@@ -1,6 +1,6 @@
 ## Introduction 
 
-RiDDiM is an audio streaming server written in python.  It has the
+riddim is an audio streaming server written in python.  It has the
 following features:
 
         + Multithreaded, supports multiple clients
@@ -11,7 +11,7 @@ following features:
 
 ## Networking
 
-RiDDiM maintains an internal list of mp3s that it plays in sequential
+riddim maintains an internal list of mp3s that it plays in sequential
 order, just like a digital jukebox.  It accepts two types of
 connections:
 
@@ -32,7 +32,7 @@ file.
 
         % $EDITOR riddim.cfg
 
-RiDDiM can be run either in the foreground (so that you can see
+riddim can be run either in the foreground (so that you can see
 debugging output) or as a backgrounded process.  This is controlled by
 the -f flag.  Like apachectl, riddim can be started, stopped, and
 restarted by passing the -k flag.
@@ -54,7 +54,7 @@ playlist:
         % ./riddim.py -Q     
 
 
-        -=[RiDDiM]=-  uptime:  00:00:13
+        [riddim]  uptime:  00:00:13
         playing:  Bob Marley & The Wailers - Stop That Train
         10 tracks ******************************
         * Bob Marley & The Wailers - Intro

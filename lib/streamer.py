@@ -22,10 +22,10 @@ class RiddimStreamer(object):
             self.scrobble_queue = Queue.Queue()
             RiddimScrobbler(self.scrobble_queue).start()
 
-    # ~ It's always a good day for smoking crack at Nullsoft!
-    # ~ See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
-    # ~ This explains the whole cockamamie thing:
-    #   http://www.smackfu.com/stuff/programming/shoutcast.html
+    # It's always a good day for smoking crack at Nullsoft!
+    #   See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
+    #           This explains the whole cockamamie thing:
+    #           http://www.smackfu.com/stuff/programming/shoutcast.html
 
     def get_meta(self,song):
         # lifted from amarok
@@ -47,6 +47,9 @@ class RiddimStreamer(object):
 
         return meta
 
+    def empty_scrobble_queue(self):
+        while not self.scrobble_queue.empty(): self.scrobble_queue.get() # drain queue
+
     def stream(self, icy_client=False):
         f = None
         song = None
@@ -58,7 +61,11 @@ class RiddimStreamer(object):
 
             # new song
             song = self.playlist.get_song()
-            if not song: return
+            if not song:
+                if self.data['index'] == 0: log.info("no playlist, won't stream"); return
+                self.empty_scrobble_queue()
+                return
+
             if self.scrobble:
                 log.debug("enqueued now playing")
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
@@ -71,10 +78,10 @@ class RiddimStreamer(object):
                 # sorry code gods
                 flac = False
 
-                # this loop gets its ideas about the shoutcast protocol from amarok
+                # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
                 buffer_size         = 4096
-                metadata_interval   = self.config.getint('icy','metaint')
+                metadata_interval   = self.config.getint('icy', 'metaint')
 
                 try:
                     f.close()
@@ -94,8 +101,17 @@ class RiddimStreamer(object):
                     f = mp3_pipe.stdout
                     flac = True
                 else: # assume mp3
-                    f = file(song['path'], 'r')
-                    f.seek(song['audio']['start'])
+                    try:
+                        f = file(song['path'], 'r')
+                        f.seek(song['audio']['start'])
+                    except IOError:
+                        import pprint
+                        # file deleted?
+                        log.warn("removing %s.  file deleted?" % \
+                                self.data['playlist'][self.data['index']]['path'])
+                        self.playlist.remove(self.data['index'])
+                        song = None
+                        continue
 
                 self.dirty_meta = True
 
@@ -107,7 +123,6 @@ class RiddimStreamer(object):
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
-                            #lf.write("sent %s [%s]\n" % (metadata, len(metadata)))
                             self.request.send(metadata)
                         self.byte_count = 0
                     else:
@@ -117,18 +132,15 @@ class RiddimStreamer(object):
                             n_bytes = buffer_size
                         buffer = f.read(n_bytes)
 
-                        #lf.write("sent buffer [%s]\n" % len(buffer))
                         self.request.send(buffer)
                         self.byte_count += len(buffer)
                         self.total_bytes += len(buffer)
                         if len(buffer) == 0: break
-                        #log.debug("%s wrote %s [%s]\n" % (i, len(buffer), self.byte_count))
                     i+=1
 
                     # check for state change every 0.5MB (local I/O!)
                     # this sucks FIXME
                     if self.byte_count > 0 and ((self.total_bytes % 524288) == 0):
-                        #print "self.byte_count:  %s" % self.total_bytes
                         if self.data['status'] == 'stopped':
                             self.data['song'] == ''
                             log.debug("RiDDiM stopped.")
@@ -144,6 +156,7 @@ class RiddimStreamer(object):
                     self.data['index'] += 1
                 self.dirty_meta = True
             except IOError, e:
+                self.empty_scrobble_queue()
                 self.data['song'] = None
                 if e.errno == errno.EPIPE:
                     log.exception("Broken pipe")

@@ -23,6 +23,12 @@ class RiddimPlaylist(object):
                 (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title']]))
         return '\n'.join(new_pl)
 
+    def __getitem__(self,key):
+        return self.data[key]
+
+    def __setitem__(self,key,value):
+        self.data[key] = value
+
     def get_song(self):
         playlist = self.data['playlist']
         if playlist is None: return False
@@ -35,34 +41,34 @@ class RiddimPlaylist(object):
             self.data['song'] = song['audio']['title']
             return song
         except IndexError:
-            log.exception("No song at index %s" % I)
+            #log.exception("No song at index %s" % I)
+            self.data['index'] = 0
             return False
         except KeyError:
-            log.exception("No song at index %s" % I)
+            self.data['index'] = 0
+            #log.exception("No song at index %s" % I)
             return False
+        except Exception, e:
+            log.exception(e)
 
-    def files_by_pattern(self,path,pattern):
+    def files_by_pattern(self, path, pattern):
         results = []
         for base, dirs, files in os.walk(path):
             matches = fnmatch.filter(files, pattern)
             results.extend(os.path.realpath(os.path.join(base, m)) for m in matches)
         return results
 
-    def enqueue_list(self,path):
+    def enqueue_list(self, path):
         results = []
-        log.info("Enqueueing %s" % path)
-        return self.files_by_pattern(path, '*.[mM][pP]3') + \
-               self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
+        return self.files_by_pattern(path, '*.[mM][pP]3') + self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
-    def enqueue(self,path):
+    def enqueue(self, path):
         eL = self.enqueue_list(path)
         eL.sort()
         playlist = self.data['playlist']
         if playlist is None: playlist = {}
-        if len(playlist) == 0:
-            last = 0
-        else:
-            last = sorted(playlist.keys())[-1] + 1
+        if len(playlist) == 0:  last = 0
+        else:                   last = sorted(playlist.keys())[-1] + 1
         #allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
         for i in range(len(eL)):
             ra = RiddimAudio(eL[i])
@@ -71,6 +77,12 @@ class RiddimPlaylist(object):
                     'path'      : eL[i],
                     'audio'     : ra.data()
             }
+        self.data['playlist'] = playlist
+
+    def remove(self, index):
+        # omfg this sucks FIXME
+        playlist = self.data['playlist']
+        del(playlist[index])
         self.data['playlist'] = playlist
 
 #if __name__ == '__main__':
