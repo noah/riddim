@@ -126,3 +126,4 @@ I ripped off some code from Amarok for the streaming logic (lib/streamer).
 
 + Auth (signing !)
 + Web control
++ import multiprocessing ...

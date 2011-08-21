@@ -143,7 +143,7 @@ class RiddimStreamer(object):
                     if self.byte_count > 0 and ((self.total_bytes % 524288) == 0):
                         if self.data['status'] == 'stopped':
                             self.data['song'] == ''
-                            log.debug("RiDDiM stopped.")
+                            log.debug("riddim stopped.")
                             return
                         # if we need to skip, reset the flag(s)
                         if self.data['index_changed']:
