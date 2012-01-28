@@ -18,10 +18,10 @@ class RiddimPlaylist(object):
         new_pl = []
         for i,track in pl.iteritems():
             # leader = "*" if int(i) == index and self.data['status'] == 'playing' else " "
-            pre = post = ""
+            pre = post = " "
             if int(i) == index:
-                pre     = "* \033[92m"
-                post    = "\033[0m"
+                pre     = "*" * len(pre)
+                post    = " "
             new_pl.append(' '.join([pre, '%0*d' % (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title'], post]))
         return '\n'.join(new_pl)
 
@@ -52,6 +52,7 @@ class RiddimPlaylist(object):
             return False
         except Exception, e:
             log.exception(e)
+            return False
 
     def files_by_pattern(self, path, pattern):
         results = []

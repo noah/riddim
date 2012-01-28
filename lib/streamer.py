@@ -39,11 +39,18 @@ class RiddimStreamer(object):
             # 28 is the number of static characters in metadata (!)
             length          = len(stream_title) + len(stream_url) + 28
             pad             = 16 - length % 16
+            #x = (length+pad)/16
+            #print x
+            #print "%s" % x
+            #print "`%c'" % x
             what = padding[:pad]
             meta            = metadata % (((length+pad)/16),stream_title,stream_url,what)
             self.dirty_meta = False
         else:
             meta = '\x00'
+
+        #for x in [padding,stream_title,stream_url,length,pad,what]:
+        #    print "%s (%s)" % (x, len(str(x)))
 
         return meta
 
@@ -62,7 +69,9 @@ class RiddimStreamer(object):
             # new song
             song = self.playlist.get_song()
             if not song:
-                if self.data['index'] == 0: log.info("no playlist, won't stream"); return
+                if self.data['index'] == 0:
+                    log.info("no playlist, won't stream"); return
+                    self.byte_count = 0
                 self.empty_scrobble_queue()
                 return
 
@@ -74,6 +83,7 @@ class RiddimStreamer(object):
             #import pprint
             #pprint.pprint(song)
 
+            flac_pipe = mp3_pipe = None
             try:
                 # sorry code gods
                 flac = False
@@ -105,7 +115,7 @@ class RiddimStreamer(object):
                         f = file(song['path'], 'r')
                         f.seek(song['audio']['start'])
                     except IOError:
-                        import pprint
+                        #import pprint
                         # file deleted?
                         log.warn("removing %s.  file deleted?" % \
                                 self.data['playlist'][self.data['index']]['path'])
@@ -123,6 +133,9 @@ class RiddimStreamer(object):
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
+                            #print len(metadata)
+                            #import sys
+                            #sys.exit(-1)
                             self.request.send(metadata)
                         self.byte_count = 0
                     else:
@@ -156,12 +169,24 @@ class RiddimStreamer(object):
                     self.data['index'] += 1
                 self.dirty_meta = True
             except IOError, e:
-                self.empty_scrobble_queue()
                 self.data['song'] = None
                 if e.errno == errno.EPIPE:
+                    self.empty_scrobble_queue()
                     log.exception("Broken pipe")
                 elif e.errno == errno.ECONNRESET:
-                    log.exception("Connection reset by peer")
+                    self.empty_scrobble_queue()
+                    #log.exception("Connection reset by peer")
+                    log.info("Client disconnected")
                 else:
+                    self.empty_scrobble_queue()
                     log.exception(errno.errorcode[e.errno])
                 break # while
+            finally:
+                pipes = [mp3_pipe, flac_pipe]
+                for pipe in pipes:
+                    try:
+                        pipe.kill()
+                        pipe.wait()
+                    except OSError:
+                        # can't kill dead proc
+                        pass
