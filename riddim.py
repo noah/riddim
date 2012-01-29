@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import sys, time
+import sys, time, errno, socket
 
 """
 riddim.py Copyright (c) <2010> <Noah K. Tilton> <noahktilton@gmail.com>
@@ -53,6 +53,9 @@ if __name__ == '__main__':
                     'stop'      : cli.stop
             }[flag]()
         except KeyError: pass
+        except socket.error, se:
+            if se.errno == errno.ECONNREFUSED:
+                print "Not running."
 
         try:                    # arg
             print {
@@ -60,7 +63,11 @@ if __name__ == '__main__':
                     'index'     : cli.index,
                     'clear'     : cli.clear,
             }[flag](eval("opts.%s" % flag))
-        except KeyError: pass
+        except KeyError:
+            pass
+        except socket.error, se:
+            if se.errno == errno.ECONNREFUSED:
+                print "Not running."
 
         #except Exception, e:
         #    log.exception(e)
