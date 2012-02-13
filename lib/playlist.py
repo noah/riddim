@@ -1,4 +1,4 @@
-import os
+import os, sys
 import fnmatch
 import itertools
 
@@ -70,7 +70,8 @@ class RiddimPlaylist(object):
         eL.sort()
         playlist = self.data['playlist']
         if playlist is None: playlist = {}
-        if len(playlist) == 0:  last = 0
+        track_count = int(len(playlist))
+        if track_count == 0:    last = 0
         else:                   last = sorted(playlist.keys())[-1] + 1
         #allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
         for i in range(len(eL)):
@@ -80,13 +81,19 @@ class RiddimPlaylist(object):
                     'path'      : eL[i],
                     'audio'     : ra.data()
             }
+            print ". ",
+            sys.stdout.flush()
+        print
         self.data['playlist'] = playlist
+        added =int(len(playlist)) - track_count
+        return added
 
     def remove(self, index):
         # omfg this sucks FIXME
         playlist = self.data['playlist']
         del(playlist[index])
         self.data['playlist'] = playlist
+
 
 #if __name__ == '__main__':
 #    print RiddimPlaylist()

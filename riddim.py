@@ -44,13 +44,13 @@ if __name__ == '__main__':
     flag = cli.o.flag
 
     if flag:
-
         opts = cli.o.options # handle flags
         try:
             print {          # no arg
                     'pause'     : cli.pause,
                     'query'     : cli.query,
-                    'stop'      : cli.stop
+                    'stop'      : cli.stop,
+                    'enqueue'   : cli.enqueue
             }[flag]()
         except KeyError: pass
         except socket.error, se:
@@ -59,9 +59,8 @@ if __name__ == '__main__':
 
         try:                    # arg
             print {
-                    'enqueue'   : cli.enqueue,
                     'index'     : cli.index,
-                    'clear'     : cli.clear,
+                    'clear'     : cli.clear
             }[flag](eval("opts.%s" % flag))
         except KeyError:
             pass

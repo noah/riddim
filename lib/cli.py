@@ -1,4 +1,4 @@
-import os, sys, time, threading, xmlrpclib
+import re, os, sys, time, threading, xmlrpclib
 
 from lib.daemonize import daemonize
 from lib.data import RiddimData
@@ -6,6 +6,7 @@ from lib.config import RiddimConfig
 from lib.options import RiddimOptions
 from lib.server import RiddimServer
 from lib.xmlrpc import RiddimRPCRegisters, RiddimRPCClient
+from lib.playlist import RiddimPlaylist
 from lib.logger import log, fh
 
 class RiddimCLI(RiddimRPCClient):
@@ -103,3 +104,48 @@ class RiddimCLI(RiddimRPCClient):
         pid = self.pid()
         log.info("RiDDiM running;  PID:  %s " % pid if pid else "RiDDiM not running")
         sys.exit(0)
+
+    def enqueue(self):
+        tracks = 0
+        try:
+            rp = RiddimPlaylist()
+            for path in self.o.args:
+                tracks += rp.enqueue(path)
+        except Exception, e:
+            log.exception(e)
+        return "Enqueued %s tracks in %s directories." % (tracks, len(self.o.args))
+
+    def clear(self, regex=None):
+
+        if regex:       # user passed in a regex
+            regex           = re.compile(regex,re.IGNORECASE)
+            data            = self.data
+            old_playlist    = data['playlist']
+            pl_keys         = sorted(old_playlist.keys())
+            new_playlist    = {}
+
+            i = 0
+            removed = 0
+            for pl_key in pl_keys:
+                title = old_playlist[pl_key]['audio']['title']
+                # If the track does not match the removal regex (i.e.,
+                # should be kept), then append it and increment the
+                # index
+                if not re.search(regex, title):
+                    new_playlist[i] = old_playlist[pl_key]
+                    i = i+1
+                else:
+                    removed +=1
+                    print "x ",
+                    sys.stdout.flush()
+            print "%s tracks removed." % removed
+            lpl = len(new_playlist.keys())
+            if data['index'] >= lpl: data['index'] = 0
+            data['playlist'] = new_playlist
+            self.data = data
+
+        else:
+            # Clear everything
+            self.data['playlist'] = {}
+
+        return self.query()

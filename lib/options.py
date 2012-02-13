@@ -1,6 +1,7 @@
 import os
 import re
 from optparse import OptionParser
+#from lib.logger import log
 
 from lib.config import RiddimConfig
 

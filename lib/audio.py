@@ -124,7 +124,7 @@ class RiddimAudio(AudioUtil):
         except TypeError:
             pass
 
-        log.warning("No bitrate available for %s" % self.path)
+        #log.warning("No bitrate available for %s" % self.path)
         return bitrate
 
     def tracknumber(self):
@@ -138,7 +138,9 @@ class RiddimAudio(AudioUtil):
         except KeyError:
             pass
 
-        if tracknumber == -1: log.warning("No tracknumber available for %s" % self.path)
+        if tracknumber == -1:
+            #log.warning("No tracknumber available for %s" % self.path)
+            pass
 
         return tracknumber
 
@@ -148,11 +150,12 @@ class RiddimAudio(AudioUtil):
     def tags(self):
         artist = album = title = ""
         try:
-            artist =self.audio['artist'][0]
-            album = self.audio['album'][0]
-            title = self.audio['title'][0]
+            artist  = self.audio['artist'][0]
+            album   = self.audio['album'][0]
+            title   = self.audio['title'][0]
         except KeyError, e:
-            log.warning("no %s found" % e)
+            #log.warning("no %s found" % e)
+            pass
         except Exception, e:
             log.exception(self.audio)
             log.exception("Couldn't parse mimetype for %s" % self.path)
