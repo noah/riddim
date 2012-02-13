@@ -3,13 +3,13 @@ import fnmatch
 import itertools
 
 from lib.logger import log
-from lib.data import RiddimData
-from lib.audio import RiddimAudio
+from lib.data import Data
+from lib.audio import Audio
 
-class RiddimPlaylist(object):
+class Playlist(object):
 
     def __init__(self):
-        self.data = RiddimData()
+        self.data = Data()
         self.playlist = sorted(self.data['playlist'].keys())
 
     def __str__(self):
@@ -75,7 +75,7 @@ class RiddimPlaylist(object):
         else:                   last = sorted(playlist.keys())[-1] + 1
         #allowable_mimetypes = ['audio/mpeg', 'audio/x-flac']
         for i in range(len(eL)):
-            ra = RiddimAudio(eL[i])
+            ra = Audio(eL[i])
             if ra.corrupt: continue
             playlist[i+last] = {
                     'path'      : eL[i],
@@ -96,4 +96,4 @@ class RiddimPlaylist(object):
 
 
 #if __name__ == '__main__':
-#    print RiddimPlaylist()
+#    print Playlist()

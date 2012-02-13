@@ -83,7 +83,7 @@ class AudioUtil(object):
           retVal = [0];
        return retVal;
 
-class RiddimAudio(AudioUtil):
+class Audio(AudioUtil):
 
     def __init__(self, path):
         self.path = path
@@ -209,7 +209,7 @@ if  __name__ == '__main__':
     import glob
     for file in glob.glob("./audio/*"):
         if not os.path.isdir(file):
-            song = RiddimAudio(file)
+            song = Audio(file)
             print song
     a = [0,1,0,1,0,1,1,0,0,1,1,0,1,0,0,1];
     A = AudioUtil()
@@ -218,5 +218,5 @@ if  __name__ == '__main__':
     A = AudioUtil()
     print A.bytes2bin(b)
     """
-    ra = RiddimAudio("/media/_rock/islands/return_to_the_sea/07_jogging_gorgeous_summer.mp3")
+    ra = Audio("/media/_rock/islands/return_to_the_sea/07_jogging_gorgeous_summer.mp3")
     print ra.start()

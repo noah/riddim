@@ -3,29 +3,27 @@ import glob
 import socket
 import SocketServer
 import BaseHTTPServer
-import SimpleXMLRPCServer
 
-from lib.config import RiddimConfig
-from lib.streamer import RiddimStreamer
+from lib.config import Config
+from lib.streamer import Streamer
+from lib.logger import log
+class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
-
-    def do_HEAD(self,icy_client):
+    def do_HEAD(self, icy_client):
         #if icy_client:
-        self.send_response(200,"ICY")
-        config = RiddimConfig().config
+        self.send_response(200, "ICY")
+        config = Config().config
         # fixme verbose
         headers = {
-            'icy-notice1'   : config.get('icy','notice1'),
-            'icy-notice2'   : config.get('icy','notice2'),
-            'icy-name'      : config.get('icy','name',0,
-                                {'hostname': socket.gethostname()}),
-            'icy-genre'     : config.get('icy','genre'),
-            'icy-url'       : config.get('icy','url'),
-            'icy-pub'       : config.getboolean('icy','pub'),
+            'icy-notice1'   : config.get('icy', 'notice1'),
+            'icy-notice2'   : config.get('icy', 'notice2'),
+            'icy-name'      : config.get('icy', 'name',0, {'hostname': socket.gethostname()}),
+            'icy-genre'     : config.get('icy', 'genre'),
+            'icy-url'       : config.get('icy', 'url'),
+            'icy-pub'       : config.getboolean('icy', 'pub'),
             #'icy-br'        : 128,
-            'icy-metaint'   : config.getint('icy','metaint'),
-            'content-type'  : config.get('icy','content_type')
+            'icy-metaint'   : config.getint('icy', 'metaint'),
+            'content-type'  : config.get('icy', 'content_type')
         }
         for k,v, in headers.iteritems():
             self.send_header(k,v)
@@ -39,7 +37,7 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
 
         """ xmlrpclib """
         # POST /RPC2 HTTP/1.0
-        # Host: downbe.at:18944
+        # Host: 0x7be.org:18944
         # User-Agent: xmlrpclib.py/1.0.1 (by www.pythonware.com)
         # Content-Type: text/xml
         # Content-Length: 112
@@ -69,13 +67,13 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
 
         """ cmus """
         # GET / HTTP/1.0
-        # Host: downbe.at
+        # Host: 0x7be.org
         # User-Agent: cmus/v2.3.2
         # Icy-MetaData: 1
 
         """ mplayer """
         # GET / HTTP/1.0
-        # Host: downbe.at:18944
+        # Host: 0x7be.org:18944
         # User-Agent: MPlayer/SVN-r31347-4.5.0
         # Icy-MetaData: 1
         # Connection: close
@@ -83,12 +81,12 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
         # GET / HTTP/1.0
         # Accept: */*
         # User-Agent: NSPlayer/4.1.0.3856
-        # Host: downbe.at:18944
+        # Host: 0x7be.org:18944
         # Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}
         # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,request-context=1,max-duration=0
         # Connection: Close
 
-        """ squeezebox (wut?) """
+        """ squeezebox """
         # Connection: close
         # Cache-Control: no-cache
         # Accept: */*
@@ -96,29 +94,28 @@ class RiddimServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,SimpleXML
         # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN; utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
         # Icy-Metadata: 1
 
-        self.streamer = RiddimStreamer(self.request)
+        self.streamer = Streamer(self.request)
 
         H = self.headers
         icy_client = False
         try:
             icy_client = (int(H['icy-metadata']) == 1)
         except KeyError, e:
-            print "non-icy (dry?) client:  %s" % e
+            log.exception("non-icy client:  %s" % e)
 
         user_agent = None
         try:
             user_agent = H['user-agent']
         except KeyError, e:
-            print "Couldn't get user agent!"
+            log.exception("Couldn't get user agent.  Bailing!")
 
         if user_agent:
-            print "User-Agent:  %s" % user_agent
+            log.info("User-Agent:  %s" % user_agent)
 
         self.do_HEAD(icy_client)
         self.streamer.stream(icy_client)
 
-class RiddimServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer,SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
+class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     def __init__(self,addr):
         self.allow_reuse_address = 1
-        SimpleXMLRPCServer.SimpleXMLRPCDispatcher.__init__(self,allow_none=True)
-        SocketServer.TCPServer.__init__(self,addr,RiddimServerRequestHandler)
+        SocketServer.TCPServer.__init__(self, addr,ServerRequestHandler)

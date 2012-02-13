@@ -27,7 +27,7 @@ class ScrobbleItem:
 def escape(str):
     return unquote(str)
 
-class RiddimScrobbler(threading.Thread):
+class Scrobbler(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue

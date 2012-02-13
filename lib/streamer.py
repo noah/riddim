@@ -1,18 +1,18 @@
 import os, time, errno, socket, subprocess, Queue
 import mad
 
-from lib.data import RiddimData
-from lib.config import RiddimConfig
-from lib.playlist import RiddimPlaylist
-from lib.scrobble import RiddimScrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
+from lib.data import Data
+from lib.config import Config
+from lib.playlist import Playlist
+from lib.scrobble import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
 
 from lib.logger import log
 
-class RiddimStreamer(object):
+class Streamer(object):
     def __init__(self,request):
-        self.data           = RiddimData()
-        self.playlist       = RiddimPlaylist()
-        self.config         = RiddimConfig().config
+        self.data           = Data()
+        self.playlist       = Playlist()
+        self.config         = Config().config
         self.request        = request
         self.byte_count     = 0
         self.total_bytes    = 0
@@ -20,7 +20,7 @@ class RiddimStreamer(object):
 
         if self.scrobble:
             self.scrobble_queue = Queue.Queue()
-            RiddimScrobbler(self.scrobble_queue).start()
+            Scrobbler(self.scrobble_queue).start()
 
     # It's always a good day for smoking crack at Nullsoft!
     #   See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
@@ -120,6 +120,7 @@ class RiddimStreamer(object):
                         log.warn("removing %s.  file deleted?" % \
                                 self.data['playlist'][self.data['index']]['path'])
                         self.playlist.remove(self.data['index'])
+                        self.empty_scrobble_queue()
                         song = None
                         continue
 
