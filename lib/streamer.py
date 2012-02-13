@@ -184,9 +184,10 @@ class RiddimStreamer(object):
             finally:
                 pipes = [mp3_pipe, flac_pipe]
                 for pipe in pipes:
-                    try:
-                        pipe.kill()
-                        pipe.wait()
-                    except OSError:
-                        # can't kill dead proc
-                        pass
+                    if pipe is not None:
+                        try:
+                            pipe.kill()
+                            pipe.wait()
+                        except OSError:
+                            # can't kill dead proc
+                            pass

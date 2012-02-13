@@ -44,22 +44,28 @@ class RiddimRPCRegisters(object):
     def clear(self,regex=None):
 
         if regex:       # user passed in a regex
-            regex       = re.compile(regex,re.IGNORECASE)
-            playlist    = {}
-            pl_keys     = sorted(self.data['playlist'].keys())
-            i           = 0
+            regex           = re.compile(regex,re.IGNORECASE)
+            data            = self.data
+            old_playlist    = data['playlist']
+            pl_keys         = sorted(old_playlist.keys())
+            new_playlist    = {}
+
+            i = 0
             for pl_key in pl_keys:
-                title = self.data['playlist'][pl_key]['audio']['title']
+                title = old_playlist[pl_key]['audio']['title']
                 # If the track does not match the removal regex (i.e.,
                 # should be kept), then append it and increment the
                 # index
                 if not re.search(regex, title):
-                    playlist[i] = self.data['playlist'][pl_key]
+                    new_playlist[i] = old_playlist[pl_key]
                     i = i+1
 
-            self.data['playlist'] = playlist
-            lpl = len(self.data['playlist'].keys())
-            if self.data['index'] >= lpl: self.data['index'] = 0
+            log.debug("done looping ")
+
+            lpl = len(new_playlist.keys())
+            if data['index'] >= lpl: data['index'] = 0
+            data['playlist'] = new_playlist
+            self.data = data
 
         else:
             # Clear everything
