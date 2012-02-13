@@ -9,94 +9,90 @@ following features:
         + Track scrobbling to Last.fm
 
 
-## Networking
+## Digital jukebox
 
 riddim maintains an internal list of mp3s that it plays in sequential
-order, just like a digital jukebox.  It accepts two types of
-connections:
+order, like a digital jukebox.  
 
-1.  HTTP GET requests
-1.  XMLRPC requests
-
-In the first instance, it begins streaming mp3 data to the client.
-In the second instance, it attempts to interpret the request as a
-command.
-
-Commands are used to manipulate the internal playlist state
-(enqueue, dequeue, display).
+Commands are used to manipulate the internal playlist state (enqueue,
+dequeue, display).
 
 ## Synopsis
 
-The first thing you'll probably want to do is edit the general config
-file. 
+```bash
+% riddim -h
+usage: riddim [-h] [-k {stop,start,restart}] [-c REGEX] [-i INDEX] [-q]
+              [-e /PATH/TO/TRACKS [/PATH/TO/TRACKS ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -k {stop,start,restart}, --signal {stop,start,restart}
+                        signal stop/start/status
+  -c REGEX, --clear REGEX
+                        clear playlist of tracks matching REGEX
+  -i INDEX, --index INDEX
+                        set now playing to index INDEX
+  -q, --query           display server state
+  -e /PATH/TO/TRACKS [/PATH/TO/TRACKS ...], --enqueue /PATH/TO/TRACKS [/PATH/TO/TRACKS ...]
+                        enqueue track(s)
+
+```
+
+The config file has some tweaks but you shouldn't have to change the defaults:
 
         % $EDITOR riddim.cfg
 
-riddim can be run either in the foreground (so that you can see
-debugging output) or as a backgrounded process.  This is controlled by
-the -f flag.  Like apachectl, riddim can be started, stopped, and
+Like apachectl, riddim can be started, stopped, and
 restarted by passing the -k flag.
 
         % ./riddim.py -k start
 
-Next, queue up some tracks:
+## Using riddim to listen to streaming music
 
+On the server side, queue up some tracks:
 
-        % ./riddim.py --enqueue ./path/to/bob_marley
+```bash
+% ./riddim.py --enqueue ./path/to/some_music
+```
 
-Connect a client:
+From the client, connect to the server:
 
-        % mplayer http://localhost:18944
+```bash
+% mplayer http://server:18944
+% vlc -I curses http://server:18944
+% cmus http://server:18944
+```
 
 (Music should now be coming out of your speakers).  Display the
 playlist:
 
-        % ./riddim.py -Q     
+```bash
+  % ./riddim.py -q
 
+  [riddim]  uptime:  00:00:13
+  playing:  Bob Marley & The Wailers - Stop That Train
+  10 tracks ******************************
+  * Bob Marley & The Wailers - Intro
+    Bob Marley & The Wailers - Rasta Man Chant
+    Bob Marley & The Wailers - Slave Driver
+    Bob Marley & The Wailers - Stop That Train
+    Bob Marley & The Wailers - No More Trouble
+    Bob Marley & The Wailers - 400 Years
+    Bob Marley & The Wailers - Stir It Up
+    Bob Marley & The Wailers - Concrete Jungle
+    Bob Marley & The Wailers - Get Up Stand Up
+    Bob Marley & The Wailers - Kinky Reggae
+```
 
-        [riddim]  uptime:  00:00:13
-        playing:  Bob Marley & The Wailers - Stop That Train
-        10 tracks ******************************
-        * Bob Marley & The Wailers - Intro
-          Bob Marley & The Wailers - Rasta Man Chant
-          Bob Marley & The Wailers - Slave Driver
-          Bob Marley & The Wailers - Stop That Train
-          Bob Marley & The Wailers - No More Trouble
-          Bob Marley & The Wailers - 400 Years
-          Bob Marley & The Wailers - Stir It Up
-          Bob Marley & The Wailers - Concrete Jungle
-          Bob Marley & The Wailers - Get Up Stand Up
-          Bob Marley & The Wailers - Kinky Reggae
+You can remove tracks by passing a regex to the `-c` (clear) flag:
+
+```bash
+    % riddim -c Jungle
+```
  
-## "Advanced" Usage
-
-        % ./riddim.py -h
-        Usage: riddim.py [options]
-
-        Options:
-          -h, --help            show this help message and exit
-          -Q, --query           display server state
-          -P PORT, --port=PORT  port number to try
-          -S, --shuffle         toggle shuffle
-          -R, --repeat          toggle repeat
-          -e ENQUEUE, --enqueue=ENQUEUE
-                                enqueue track(s) onto playlist
-          -f, --foreground      don't fork the server
-          -c, --clear           clear playlist
-          -n, --next            proceed to next track
-          -k SIGNAL, --signal=SIGNAL
-                                signal stop/start/status
-          -u, --pause           pause playback
-          -p, --play            start playback
-          -s, --stop            stop playback
-          -r, --prev            go back to previous track
-
-
-Everything is implemented in the client except for shuffle, repeat, and play (which is implicit in connecting to the stream).
-
-
 ## Dependencies
 
+```bash
         % python --version
         Python 2.6.5
 
@@ -105,10 +101,13 @@ Everything is implemented in the client except for shuffle, repeat, and play (wh
 
         % pacman -Q pymad
         pymad 0.6-3
+```
 
 ## Optional Dependencies
     
+```bash
         # pip install scrobbler
+```
 
 If you want to scrobble tracks, you will need to set scrobble=True in
 riddim.cfg and also create a scrobbler.cfg file with the following
@@ -126,4 +125,4 @@ I ripped off some code from Amarok for the streaming logic (lib/streamer).
 
 + Auth (signing !)
 + Web control
-+ import multiprocessing ...
++ Shuffle/repeat/advanced playlist functionality
