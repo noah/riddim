@@ -15,6 +15,7 @@ class Config(object):
 
         # set up some config stuff that we will need
         self.port       = self.config.get('riddim', 'port')
+        self.hostname   = "0.0.0.0"
         runpath         = join_path(basepath, 'var', 'run')
         self.pidpath    = join_path(runpath, self.config.get('riddim', 'pidfile'))
         self.datapath   = join_path(basepath, 'data', self.config.get('riddim','datafile'))

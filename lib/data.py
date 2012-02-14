@@ -1,15 +1,34 @@
-import os
+import os, time
 import pickle
 
 import threading
 lock = threading.Lock()
 
-from config import Config
+from lib.config import Config
 
+# TODO singleton
 class Data(object):
 
     def __init__(self):
         self.config = Config()
+
+        self.data = {}
+        try:
+            # read the file
+            with open( self.config.datapath, 'r' ) as picklef:
+                self.data = pickle.load(picklef)
+        except IOError:
+            # file doesn't exist
+            open(self.config.datapath, 'w').close()
+
+
+        self.data['started_on'] = time.time()
+        self.data['port']       = self.config.port
+        self.data['hostname']   = self.config.hostname
+        self.data['song']       = ''
+        self.data['status']     = 'stopped'
+        self.data['index']      = 0
+        if self.data['playlist'] is None: self.data['playlist'] = {}
 
     def __getitem__(self, key):
         try:

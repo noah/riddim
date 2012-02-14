@@ -28,27 +28,20 @@ class Riddim():
         for retry in range(1, (int(5 * 60) / INTERVAL)):
             try:
                 time.sleep(0.001)
-                server      = Server((self.data['hostname'], int(port)))
+                server      = Server((self.config.hostname, int(port)))
                 (ip, port)  = server.server_address
                 log.info("server running at http://%s:%s" % (ip, str(port)))
                 server_thread = threading.Thread(target=server.serve_forever)
                 server_thread.setDaemon(False)
                 server_thread.start()
-                self.data['started_on'] = time.time()
-                self.data['port']       = port
-                self.data['hostname']   = ip
-                self.data['song']       = ''
-                self.data['status']     = 'stopped'
-                self.data['index']      = 0
-                if self.data['playlist'] is None: self.data['playlist'] = {}
                 break
             except socket.error, se:
                 if se.errno == errno.EACCES:
                     log.warn("Bad port: %s" % port)
                     sys.exit( se.errno )
-            except Exception as e:
-                log.exception("Startup exception.  Will try to start again in %d seconds." % INTERVAL)
-                time.sleep(INTERVAL)
+            #except Exception as e:
+            #    log.exception("Startup exception.  Will try to start again in %d seconds." % INTERVAL)
+            #    time.sleep(INTERVAL)
         return server
 
     def pid(self):
@@ -62,7 +55,7 @@ class Riddim():
 
         pid = self.pid()
         if pid:
-            log.error("Server lready running;  PID:  %s" % pid)
+            log.error("Server already running;  PID:  %s" % pid)
             log.error("Try: rm %s" % self.config.pidpath)
             sys.exit(-1)
         else:
