@@ -5,7 +5,6 @@ def join_path(*args):
 
 class Config(object):
 
-
     def __init__(self):
 
         basepath    = os.path.dirname(os.path.dirname( __file__ ))
