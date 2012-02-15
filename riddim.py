@@ -1,9 +1,8 @@
 #!/usr/bin/env python2
-
-import sys, time, errno, socket
+# -*- coding: utf-8 -*-
 
 """
-riddim.py Copyright (C) <2012> <Noah K. Tilton> <noahktilton@gmail.com>
+riddim.py Copyright (©) <2012> <Noah K. Tilton> <noahktilton@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -26,6 +25,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 
+import sys, time, codecs, socket
+sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+
 from lib.logger import log
 from lib.args import Args
 from lib.riddim import Riddim
@@ -43,20 +45,18 @@ if __name__ == "__main__":
                 "status"    : riddim.status,
         }[ args.signal ]()
 
+    elif args.query:
+        print riddim.query()
     else:
         # dispatch variadic args to the appropriate method
-
-        ops = [argname for argname, argval in vars(args.args).items() if argval]
-        assert(len(ops) == 1)
-        op = ops[0]
-        try:                args = [ vars(args.args)[ op ] ]
-        except KeyError:    args = []
-
-        print {
-            "clear"         : riddim.clear,
-            "index"         : riddim.index,
-            "query"         : riddim.query,
-            "enqueue"       : riddim.enqueue
-        }[ op ]( *[arg for arg in args if arg != True])
+        for action, arg in args.args_dict.items():
+            try:
+                print {
+                    "clear"         : riddim.clear,
+                    "index"         : riddim.index,
+                    "query"         : riddim.query,
+                    "enqueue"       : riddim.enqueue
+                }[ action ]( arg )
+            except KeyError: pass
 
     sys.exit(0)
