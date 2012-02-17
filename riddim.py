@@ -51,6 +51,8 @@ if __name__ == "__main__":
             print playlist.query()
         elif args.shuffle:
             print playlist.shuffle()
+        elif args.repeat:
+            print playlist.repeat()
         else:
             for action, arg in args.args_dict.items():
                     print {
