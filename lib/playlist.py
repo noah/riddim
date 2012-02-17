@@ -223,10 +223,13 @@ shuffle: %s repeat: %s continue: %s
         return time.strftime('%H:%M:%S', time.gmtime(time.time()-self.data['started_at']))
 
     def kontinue(self):
+        # FIXME
         self.toggle('continue')
+        return self.query()
 
     def repeat(self):
         self.toggle('repeat')
+        return self.query()
 
     def shuffle(self):
         self.toggle('shuffle')
