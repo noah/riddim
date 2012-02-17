@@ -3,7 +3,6 @@
 riddim is an audio streaming server written in python.  It has the
 following features:
 
-        + Multithreaded, supports multiple clients
         + FLAC transcoding (lame)
         + Low memory footprint
         + Track scrobbling to Last.fm
@@ -26,7 +25,7 @@ usage: riddim [-h] [-k {stop,start,restart}] [-c REGEX] [-i INDEX] [-q]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -k {stop,start,restart}, --signal {stop,start,restart}
+  -k {stop,start},      --signal {stop,start}
                         signal stop/start/status
   -c REGEX, --clear REGEX
                         clear playlist of tracks matching REGEX
@@ -123,6 +122,5 @@ I ripped off some code from Amarok for the streaming logic (lib/streamer).
 
 ## TODO
 
-+ Auth (signing !)
 + Web control
 + Shuffle/repeat/advanced playlist functionality
