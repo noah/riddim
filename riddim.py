@@ -25,38 +25,39 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 
-import sys, time, codecs, socket
-sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+import sys, codecs, socket
 
 from lib.logger import log
 from lib.args import Args
-from lib.riddim import Riddim
+from lib.control import Control
+from lib.playlist import Playlist
+
+# needed if LANG=en_US.UTF-8
+sys.stdout = codecs.getwriter('utf8')( sys.stdout )
 
 if __name__ == "__main__":
 
-    args    = Args()
-    riddim  = Riddim( args )
+    args = Args()
 
     if args.signal:
         {
-                "start"     : riddim.start,
-                "stop"      : riddim.stop,
-                "restart"   : riddim.restart,
-                "status"    : riddim.status,
+                "start"     : Control().start,
+                "stop"      : Control().stop,
         }[ args.signal ]()
 
-    elif args.query:
-        print riddim.query()
     else:
-        # dispatch variadic args to the appropriate method
-        for action, arg in args.args_dict.items():
-            try:
-                print {
-                    "clear"         : riddim.clear,
-                    "index"         : riddim.index,
-                    "query"         : riddim.query,
-                    "enqueue"       : riddim.enqueue
-                }[ action ]( arg )
-            except KeyError: pass
-
+        playlist = Playlist()
+        if args.query:
+            print playlist.query()
+        else:
+            for action, arg in args.args_dict.items():
+                    print {
+                        "clear"         : playlist.clear,
+                        "index"         : playlist.index,
+                        "query"         : playlist.query,
+                        "enqueue"       : playlist.enqueue,
+                        "repeat"        : playlist.repeat,
+                        "continue"      : playlist.kontinue,
+                        "shuffle"       : playlist.shuffle
+                    }[ action ]( arg )
     sys.exit(0)

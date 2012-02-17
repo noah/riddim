@@ -20,6 +20,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('riddim')
 
 class ScrobbleItem:
+
     def __init__(self, scrobble_type, song):
         self.type = scrobble_type
         self.song = song
@@ -28,6 +29,7 @@ def escape(str):
     return unquote(str)
 
 class Scrobbler(threading.Thread):
+
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue

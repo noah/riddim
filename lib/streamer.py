@@ -1,87 +1,82 @@
-import os, time, errno, socket, subprocess, Queue
+import os, time, errno, socket, subprocess, Queue, signal
 import mad
 
-from lib.data import Data
+#from lib.data import Data
 from lib.config import Config
-from lib.playlist import Playlist
 from lib.scrobble import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
-
 from lib.logger import log
+from lib.playlist import Playlist
+
 
 class Streamer(object):
-    def __init__(self,request):
-        self.data           = Data()
+
+    def __init__(self, request):
+
         self.playlist       = Playlist()
-        self.config         = Config().config
+        #self.playlist       = sorted(self.data['playlist'].keys())
         self.request        = request
         self.byte_count     = 0
         self.total_bytes    = 0
-        self.scrobble       = self.config.getboolean('riddim', 'scrobble')
 
-        if self.scrobble:
+        if Config.scrobble:
+
             self.scrobble_queue = Queue.Queue()
-            Scrobbler(self.scrobble_queue).start()
+            self.scrobbler      = Scrobbler( self.scrobble_queue ).start()
 
     # It's always a good day for smoking crack at Nullsoft!
     #   See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
     #           This explains the whole cockamamie thing:
     #           http://www.smackfu.com/stuff/programming/shoutcast.html
 
-    def get_meta(self,song):
+
+    def get_meta(self, song):
         # lifted from amarok
         metadata    = "%cStreamTitle='%s';StreamUrl='%s';%s"
         padding     = '\x00' * 16
         meta        = None
         if self.dirty_meta:
-            stream_title    = song['audio']['title'].encode('ascii','ignore')
-            stream_url      = self.config.get('riddim','url')
+            stream_title    = song['audio']['title'].encode('ascii', 'ignore')
+            stream_url      = Config.url
 
             # 28 is the number of static characters in metadata (!)
             length          = len(stream_title) + len(stream_url) + 28
             pad             = 16 - length % 16
-            #x = (length+pad)/16
-            #print x
-            #print "%s" % x
-            #print "`%c'" % x
             what = padding[:pad]
-            meta            = metadata % (((length+pad)/16),stream_title,stream_url,what)
+            meta            = metadata % (((length+pad)/16), stream_title, stream_url, what)
             self.dirty_meta = False
         else:
             meta = '\x00'
 
-        #for x in [padding,stream_title,stream_url,length,pad,what]:
-        #    print "%s (%s)" % (x, len(str(x)))
-
         return meta
 
     def empty_scrobble_queue(self):
-        while not self.scrobble_queue.empty(): self.scrobble_queue.get() # drain queue
+        if Config.scrobble:
+            with self.scrobble_queue.mutex:
+                self.scrobble_queue.queue.clear()
 
     def stream(self, icy_client=False):
         f = None
         song = None
         while True:
-            if self.scrobble:
+            if Config.scrobble:
                 if song:
                     log.debug("enqueued played")
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song)) # just played one . . . scrobble it
 
             # new song
             song = self.playlist.get_song()
+
             if not song:
-                if self.data['index'] == 0:
-                    log.info("no playlist, won't stream"); return
-                    self.byte_count = 0
+                log.info("no playlist, won't stream"); return
+                self.byte_count = 0
                 self.empty_scrobble_queue()
                 return
 
-            if self.scrobble:
+            if Config.scrobble:
                 log.debug("enqueued now playing")
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
 
-            log.debug('> %s' % song['audio']['title'])
-            #import pprint
-            #pprint.pprint(song)
+            log.info('> %s' % song['audio']['title'])
 
             flac_pipe = mp3_pipe = None
             try:
@@ -90,8 +85,8 @@ class Streamer(object):
 
                 # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
-                buffer_size         = 4096
-                metadata_interval   = self.config.getint('icy', 'metaint')
+                buffer_size         = 128
+                metadata_interval   = Config.metaint
 
                 try:
                     f.close()
@@ -117,9 +112,9 @@ class Streamer(object):
                     except IOError:
                         #import pprint
                         # file deleted?
-                        log.warn("removing %s.  file deleted?" % \
-                                self.data['playlist'][self.data['index']]['path'])
-                        self.playlist.remove(self.data['index'])
+                        log.warn("removing %s.  file deleted?" % song)
+                        #self.data['playlist'][self.data['index']]['path'])
+                        #self.playlist.remove(self.data['index'])
                         self.empty_scrobble_queue()
                         song = None
                         continue
@@ -127,7 +122,7 @@ class Streamer(object):
                 self.dirty_meta = True
 
                 audio_size = song['audio']['size']
-                index_change = False
+                skip = False
                 i=0
                 while flac or (f.tell() < audio_size):
                     bytes_until_meta = (metadata_interval - self.byte_count)
@@ -152,25 +147,24 @@ class Streamer(object):
                         if len(buffer) == 0: break
                     i+=1
 
-                    # check for state change every 0.5MB (local I/O!)
-                    # this sucks FIXME
-                    if self.byte_count > 0 and ((self.total_bytes % 524288) == 0):
-                        if self.data['status'] == 'stopped':
-                            self.data['song'] == ''
-                            log.debug("riddim stopped.")
-                            return
-                        # if we need to skip, reset the flag(s)
-                        if self.data['index_changed']:
-                            self.data['index_changed'] = False
-                            # and get a new song
-                            index_change = True
-                            break
-                if not index_change :
-                    # increment the counter if we're not ffwd or rewinding
-                    self.data['index'] += 1
+                    if self.playlist.data['skip']:
+                        log.info(">>")
+                        skip = True
+                        break
+
+                    if self.playlist.data['status'] == 'stopped':
+                        log.info(".")
+                        skip = True
+                        break
+
+                if not skip:
+                    # increment the counter if we're not ffwd
+                    self.playlist.next()
+                else:
+                    self.playlist.data['skip'] = False
                 self.dirty_meta = True
             except IOError, e:
-                self.data['song'] = None
+                #self.data['song'] = None
                 if e.errno == errno.EPIPE:
                     self.empty_scrobble_queue()
                     log.exception("Broken pipe")

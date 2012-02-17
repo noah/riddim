@@ -1,75 +1,82 @@
-import os, time
-import pickle
+from multiprocessing.managers import BaseManager
 
-import threading
-lock = threading.Lock()
+class DataManager(BaseManager): pass
 
-from lib.config import Config
+#import pprint
 
-# TODO singleton
-class Data(object):
+#from lib.logger import log
+#from lib.config import Config
 
-    def __init__(self):
-        self.config = Config()
+# try:
+#     import cPickle as pickle
+# except ImportError:
+#     import pickle
+# 
+# class Data(object):
+# 
+#     def __init__(self):
+# 
+#         try:
+#             # Read an existing file
+#             with open( Config.datapath, 'rb' ) as picklef:
+#                 self.__data = pickle.load(picklef)
+#         except:
+#             # File non-existent or corrupt.
+#             self.truncate()
+# 
+#         print "data initialized "
+# 
+#     def __getitem__(self, key):
+#         try:
+#             return self.__data[key]
+#         except KeyError:
+#             return None
+# 
+#     def __setitem__(self, key, value):
+#         print 'hellowz'
+#         self.__data[key] = value
+# 
+#     def __delitem__(self, key):
+#         del self.__data[key]
+# 
+#     def toggle(self, key):
+#         self.__data[key] = not(bool(self.__data(key)))
+# 
+#     def __str__(self):
+#         return pprint.pformat(self.__data)
+# 
+#     def truncate(self):
+#         try:
+#             f = open(Config.datapath, 'wb')
+#             return True
+#         except Exception, e:
+#             log.exception(e)
+#         return False
+# 
+#     def save(self):
+#         try:
+#             pickle.dump(self.__data, open(Config.datapath, 'wb'))
+#             return True
+#         except Exception, e:
+#             log.exception(e)
+#         return False
+# 
+#from multiprocessing.managers import BaseManager
 
-        self.data = {}
-        try:
-            # read the file
-            with open( self.config.datapath, 'r' ) as picklef:
-                self.data = pickle.load(picklef)
-        except IOError:
-            # file doesn't exist
-            open(self.config.datapath, 'w').close()
+#class DataManager(BaseManager): pass
 
+#self.__data = dict()
 
-        self.data['started_on'] = time.time()
-        self.data['port']       = self.config.port
-        self.data['hostname']   = self.config.hostname
-        self.data['song']       = ''
-        self.data['status']     = 'stopped'
-        self.data['index']      = 0
-        if self.data['playlist'] is None: self.data['playlist'] = {}
-
-    def __getitem__(self, key):
-        try:
-            return self.read()[key]
-        except KeyError:
-            return None
-
-    def __setitem__(self, key, value):
-        D = self.read()
-        D[key] = value
-        self.write(D)
-
-    def truncate(self):
-        try:
-            f = open(self.config.datapath, 'w')
-            return True
-        except:
-            return False
-
-    def read(self):
-        f       = None
-        data    = None
-
-        try:
-            f = open(self.config.datapath, 'r')
-            data = pickle.load(f)
-        except IOError:
-            f = open(self.config.datapath, 'w')
-        except EOFError:
-            f = open(self.config.datapath, 'w')
-        finally:
-            if f is not None: f.close()
-
-        if data is None: data = {}
-
-        return data
-
-    def write(self, data):
-        return pickle.dump(data, open(self.config.datapath, 'w'))
-
-if __name__ == '__main__':
-    import pprint
-    rd = Data()
-    pprint.pprint(rd.read())
+#DataManager.register('ServerData', Data,
+#        exposed=('__str__', '__delitem__', '__getitem__', '__setitem__', 'toggle', 'truncate', 'save'))
+#
+# if __name__ == '__main__':
+#     import sys
+#     dm = DataManager()
+#     dm.start()
+#     data = dm.ServerData()
+#     print data._exposed_
+#     data['greeting'] = 'hello, world!'
+#     del data['greetz']
+#     print data['greeting']
+#     print data

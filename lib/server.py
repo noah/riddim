@@ -1,13 +1,49 @@
-import os
-import glob
-import socket
-import SocketServer
-import BaseHTTPServer
+import os, time,socket
+from SocketServer import TCPServer
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 from lib.config import Config
 from lib.streamer import Streamer
 from lib.logger import log
-class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+from lib.data import DataManager
+
+
+class Server(HTTPServer):
+
+    def __init__(self, addr):
+        self.allow_reuse_address = 1
+        TCPServer.__init__(self, addr, ServerRequestHandler)
+
+        # shared state
+        self.data = dict()
+
+        # set server defaults
+        self.data = {
+                'started_at'    : time.time(),
+                'port'          : Config.port,
+                'hostname'      : Config.hostname
+        }
+
+        # create a shared Data object
+        manager = DataManager(address=('', 18945), authkey="riddim")
+
+        # "Private" methods are *not* exported out of the manager
+        # by default.  This includes stuff to make dict work minimally.  See
+        #   http://docs.python.org/library/multiprocessing.html#multiprocessing.managers.BaseManager.register
+        DataManager.register('get_data', callable=lambda: self.data,
+                exposed=('__str__', '__delitem__', '__getitem__',
+                    '__setitem__'))
+
+        manager.start()
+
+
+        log.info("Server running at http://%s:%s" % \
+                self.server_address)
+        self.serve_forever()
+
+class ServerRequestHandler(BaseHTTPRequestHandler):
+
+    #def __init__(self, request, client_address, server):
 
     def do_HEAD(self, icy_client):
         #if icy_client:
@@ -25,42 +61,11 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             'icy-metaint'   : config.getint('icy', 'metaint'),
             'content-type'  : config.get('icy', 'content_type')
         }
-        for k,v, in headers.iteritems():
-            self.send_header(k,v)
-        #else:
-        #    self.send_response(200)
-        #    self.send_header('Content-Type', 'audio/x-mpegurl')
+        [self.send_header(k,v) for k,v, in headers.iteritems()]
         self.end_headers()
 
     def do_POST(self):
-        # Handle xmlrpc requests
-
-        """ xmlrpclib """
-        # POST /RPC2 HTTP/1.0
-        # Host: 0x7be.org:18944
-        # User-Agent: xmlrpclib.py/1.0.1 (by www.pythonware.com)
-        # Content-Type: text/xml
-        # Content-Length: 112
-
-        try:
-            content_len = int(self.headers["content-length"])
-            data = self.rfile.read(content_len)
-            response = self.server._marshaled_dispatch(data,
-                    getattr(self, '_dispatch', None))
-        except:
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            self.send_response(500)
-            self.end_headers()
-        else:
-            # got a valid XML RPC response
-            self.send_response(200)
-            self.send_header('Content-type','text/xml')
-            self.send_header('Content-length',str(len(response)))
-            self.end_headers()
-            self.wfile.write(response)
-            self.wfile.flush()
-            self.connection.shutdown(1)
+        pass
 
     def do_GET(self):
         # Client candidates:
@@ -94,8 +99,6 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN; utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
         # Icy-Metadata: 1
 
-        self.streamer = Streamer(self.request)
-
         H = self.headers
         icy_client = False
         try:
@@ -107,15 +110,12 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         try:
             user_agent = H['user-agent']
         except KeyError, e:
-            log.exception("Couldn't get user agent.  Bailing!")
+            log.exception("Couldn't get user agent.")
 
         if user_agent:
             log.info("User-Agent:  %s" % user_agent)
 
-        self.do_HEAD(icy_client)
-        self.streamer.stream(icy_client)
+        self.do_HEAD( icy_client )
 
-class Server(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-    def __init__(self,addr):
-        self.allow_reuse_address = 1
-        SocketServer.TCPServer.__init__(self, addr,ServerRequestHandler)
+        #Streamer( self.request, self.server.data ).stream( icy_client )
+        Streamer( self.request ).stream( icy_client )

@@ -34,9 +34,18 @@ class Args(object):
         parser.add_argument("-e", "--enqueue",
                                 metavar="/PATH/TO/TRACKS",
                                 help="enqueue track(s)", nargs="+")
-        # TODO
-        #         '-R' : ['--repeat',     'toggle repeat',            'store_true',   False],
-        #         '-S' : ['--shuffle',    'toggle shuffle',           'store_true',   False],
+        parser.add_argument("-r", "--repeat",
+                                action="store_true",
+                                default=False,
+                                help="Toggle song repeat")
+        parser.add_argument("-C", "--continue",
+                                action="store_true",
+                                default=False,
+                                help="Toggle continue")
+        parser.add_argument("-s", "--shuffle",
+                                action="store_true",
+                                default=False,
+                                help="Toggle shuffle")
 
         self.args       = parser.parse_args()
         self.args_dict  = vars(self.args)
