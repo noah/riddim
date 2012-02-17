@@ -1,4 +1,4 @@
-import re, os, sys, time, fnmatch, itertools
+import re, os, sys, time, fnmatch, itertools, random, pprint
 
 from lib.logger import log
 from lib.audio import Audio
@@ -59,12 +59,13 @@ class Playlist(object):
 
     def get_song(self):
         playlist = self.data['playlist']
-        if playlist is None: return False
-        I = self.data['index']
-        if I is None or I > len(playlist): I = 0
+        if playlist is None:
+            return alse
+        if self.data['index'] is None:
+            self.next()
 
         try:
-            song = playlist[I]
+            song = playlist[self.data['index']]
             self.data['status'] = 'playing'
             self.data['song'] = song['audio']['title']
             return song
@@ -191,24 +192,30 @@ class Playlist(object):
 
         return """[riddim]  uptime:  %s
 %s:  %s
+shuffle: %s repeat: %s continue: %s
 %s tracks
 %s
 %s
 """ %   (
         self.uptime(),
-        self.status(),
-        self.song(),
+        self.status(), self.song(),
+        self.data['shuffle'], self.data['repeat'], self.data['continue'],
         len(self.data['playlist']),
         30 * '*',
         str(self)
         )
 
     def index(self, index):
-        try:
-            self.data['index'] = int(index)-1
-            self.data['skip'] = True
-        except ValueError:
-            return "``%s'' is not an integer" % index
+
+        if index == "+1": # corresponds to arg -n
+            self.next()
+        else:
+            try:
+                self.data['index'] = int(index)-1
+            except ValueError:
+                return "``%s'' is not an integer" % index
+
+        self.data['skip'] = True
 
         return self.query()
 
@@ -216,22 +223,25 @@ class Playlist(object):
         return time.strftime('%H:%M:%S', time.gmtime(time.time()-self.data['started_at']))
 
     def kontinue(self):
-        self.data.toggle('continue')
+        self.toggle('continue')
 
     def repeat(self):
-        self.data.toggle('repeat')
+        self.toggle('repeat')
 
     def shuffle(self):
-        self.data.toggle('shuffle')
-
-
-    #def is_empty(self):
-    #    if self.data['index'] == 0:
-
+        self.toggle('shuffle')
+        return self.query()
 
     def next(self):
-        self.data['index'] += 1
+        if self.data['shuffle']:
+            self.data['index'] = random.choice( self.data['playlist'].keys() )
+        elif self.data['repeat']:
+            pass
+        else:
+            self.data['index'] += 1
 
+    def toggle(self, key):
+        self.data[key] = not(bool(self.data[key]))
 
 if __name__ == '__main__':
     print Playlist()

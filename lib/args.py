@@ -23,9 +23,10 @@ class Args(object):
         parser.add_argument("-c", "--clear",
                                 help="clear playlist of tracks matching REGEX",
                                 metavar="REGEX")
-        parser.add_argument("-i", "--index",
+        parser.add_argument("-n", "--index",
                                 help="set now playing to index INDEX",
-                                type=int,
+                                const="+1",
+                                nargs="?",
                                 metavar="INDEX")
         parser.add_argument("-q", "--query",
                                 action="store_true",
@@ -65,7 +66,6 @@ class Args(object):
             return self.args.__dict__[attr]
         except KeyError:
             return None
-
 
     def __repr__(self):
         return dict(vars(self.args))

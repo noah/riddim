@@ -85,7 +85,7 @@ class Streamer(object):
 
                 # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
-                buffer_size         = 128
+                buffer_size         = 1024
                 metadata_interval   = Config.metaint
 
                 try:

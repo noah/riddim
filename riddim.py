@@ -49,6 +49,8 @@ if __name__ == "__main__":
         playlist = Playlist()
         if args.query:
             print playlist.query()
+        elif args.shuffle:
+            print playlist.shuffle()
         else:
             for action, arg in args.args_dict.items():
                     print {
