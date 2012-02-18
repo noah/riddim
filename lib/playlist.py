@@ -60,7 +60,7 @@ class Playlist(object):
     def get_song(self):
         playlist = self.data['playlist']
         if playlist is None:
-            return alse
+            return False
         if self.data['index'] is None:
             self.next()
 
@@ -70,12 +70,10 @@ class Playlist(object):
             self.data['song'] = song['audio']['title']
             return song
         except IndexError:
-            #log.exception("No song at index %s" % I)
-            self.data['index'] = 0
+            self.data['index'] = 9
             return False
         except KeyError:
-            self.data['index'] = 0
-            #log.exception("No song at index %s" % I)
+            self.data['index'] = 9
             return False
         except Exception, e:
             log.exception(e)
@@ -118,8 +116,12 @@ class Playlist(object):
         self.data['playlist'] = pl
         return "Enqueued %s tracks in %s directories." % (tracks, len(paths))
 
-    def remove(self, index):
-        del(self.data[index])
+    def remove(self):
+        pl = self.data['playlist']
+        del pl[self.data['index']]
+        self.data['playlist'] = pl
+        self.next()
+        print "bumped to ", self.data['index']
 
     def status(self):
         return self.data['status']

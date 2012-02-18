@@ -60,8 +60,8 @@ class Streamer(object):
         while True:
             if Config.scrobble:
                 if song:
-                    log.debug("enqueued played")
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song)) # just played one . . . scrobble it
+                    #log.debug("enqueued played")
 
             # new song
             song = self.playlist.get_song()
@@ -73,7 +73,7 @@ class Streamer(object):
                 return
 
             if Config.scrobble:
-                log.debug("enqueued now playing")
+                #log.debug("enqueued now playing")
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
 
             log.info('> %s' % song['audio']['title'])
@@ -112,9 +112,8 @@ class Streamer(object):
                     except IOError:
                         #import pprint
                         # file deleted?
-                        log.warn("removing %s.  file deleted?" % song)
-                        #self.data['playlist'][self.data['index']]['path'])
-                        #self.playlist.remove(self.data['index'])
+                        log.warn("removing %s.  file deleted?" % song['path'])
+                        self.playlist.remove()
                         self.empty_scrobble_queue()
                         song = None
                         continue
@@ -150,11 +149,13 @@ class Streamer(object):
                     if self.playlist.data['skip']:
                         log.info(">>")
                         skip = True
+                        song = None # don't scrobble
                         break
 
                     if self.playlist.data['status'] == 'stopped':
                         log.info(".")
                         skip = True
+                        song = None # don't scrobble
                         break
 
                 if not skip:

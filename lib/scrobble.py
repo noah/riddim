@@ -15,10 +15,6 @@ from lib.logger import log
 NOW_PLAYING=0
 PLAYED=1
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('riddim')
-
 class ScrobbleItem:
 
     def __init__(self, scrobble_type, song):
