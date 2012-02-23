@@ -1,5 +1,6 @@
-import os, time, errno, socket, subprocess, Queue, signal
-import mad
+import errno
+import subprocess
+import Queue
 
 #from lib.data import Data
 from lib.config import Config
@@ -28,7 +29,6 @@ class Streamer(object):
     #           This explains the whole cockamamie thing:
     #           http://www.smackfu.com/stuff/programming/shoutcast.html
 
-
     def get_meta(self, song):
         # lifted from amarok
         metadata    = "%cStreamTitle='%s';StreamUrl='%s';%s"
@@ -42,7 +42,7 @@ class Streamer(object):
             length          = len(stream_title) + len(stream_url) + 28
             pad             = 16 - length % 16
             what = padding[:pad]
-            meta            = metadata % (((length+pad)/16), stream_title, stream_url, what)
+            meta            = metadata % (((length + pad) / 16), stream_title, stream_url, what)
             self.dirty_meta = False
         else:
             meta = '\x00'
@@ -60,14 +60,15 @@ class Streamer(object):
         while True:
             if Config.scrobble:
                 if song:
-                    self.scrobble_queue.put(ScrobbleItem(PLAYED, song)) # just played one . . . scrobble it
+                    # just played one . . . scrobble it
+                    self.scrobble_queue.put(ScrobbleItem(PLAYED, song))
                     #log.debug("enqueued played")
 
             # new song
             song = self.playlist.get_song()
 
             if not song:
-                log.info("no playlist, won't stream"); return
+                log.info("no playlist, won't stream")
                 self.byte_count = 0
                 self.empty_scrobble_queue()
                 return
@@ -102,10 +103,10 @@ class Streamer(object):
                             "/usr/bin/lame --quiet -V0 - -",
                             stdout=subprocess.PIPE,
                             shell=True,
-                            stdin = flac_pipe.stdout)
+                            stdin=flac_pipe.stdout)
                     f = mp3_pipe.stdout
                     flac = True
-                else: # assume mp3
+                else:  # assume mp3
                     try:
                         f = file(song['path'], 'r')
                         f.seek(song['audio']['start'])
@@ -122,15 +123,11 @@ class Streamer(object):
 
                 audio_size = song['audio']['size']
                 skip = False
-                i=0
                 while flac or (f.tell() < audio_size):
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
-                            #print len(metadata)
-                            #import sys
-                            #sys.exit(-1)
                             self.request.send(metadata)
                         self.byte_count = 0
                     else:
@@ -144,18 +141,17 @@ class Streamer(object):
                         self.byte_count += len(buffer)
                         self.total_bytes += len(buffer)
                         if len(buffer) == 0: break
-                    i+=1
 
                     if self.playlist.data['skip']:
                         log.info(">>")
                         skip = True
-                        song = None # don't scrobble
+                        song = None  # don't scrobble
                         break
 
                     if self.playlist.data['status'] == 'stopped':
                         log.info(".")
                         skip = True
-                        song = None # don't scrobble
+                        song = None  # don't scrobble
                         break
 
                 if not skip:
@@ -176,7 +172,7 @@ class Streamer(object):
                 else:
                     self.empty_scrobble_queue()
                     log.exception(errno.errorcode[e.errno])
-                break # while
+                break  # while
             finally:
                 pipes = [mp3_pipe, flac_pipe]
                 for pipe in pipes:

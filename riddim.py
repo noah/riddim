@@ -25,9 +25,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 
-import sys, codecs, socket
+import sys
+import codecs
 
-from lib.logger import log
 from lib.args import Args
 from lib.control import Control
 from lib.playlist import Playlist

@@ -1,4 +1,6 @@
-import os, time,socket
+import sys
+import time
+import signal
 from SocketServer import TCPServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
@@ -25,21 +27,23 @@ class Server(HTTPServer):
         }
 
         # create a shared Data object
-        manager = DataManager(address=('', 18945), authkey="riddim")
+        manager = DataManager(address=('', 18945), authkey="secret")
 
-        # "Private" methods are *not* exported out of the manager
-        # by default.  This includes stuff to make dict work minimally.  See
-        #   http://docs.python.org/library/multiprocessing.html#multiprocessing.managers.BaseManager.register
+        # "Private" methods ('__'-prefixed) are *not* exported out of
+        # the manager by default.  This includes stuff to make dict work
+        # minimally.  See
+        #   http://docs.python.org/library/multiprocessing.html
+        #
+        # Upshot is we need to explicitly name the exposed functions:
         DataManager.register('get_data', callable=lambda: self.data,
                 exposed=('__str__', '__delitem__', '__getitem__',
                     '__setitem__'))
 
         manager.start()
 
-
-        log.info("Server running at http://%s:%s" % \
-                self.server_address)
+        log.info("Bloops and bleeps at http://%s:%s" % self.server_address)
         self.serve_forever()
+
 
 class ServerRequestHandler(BaseHTTPRequestHandler):
 
@@ -48,20 +52,19 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
     def do_HEAD(self, icy_client):
         #if icy_client:
         self.send_response(200, "ICY")
-        config = Config().config
         # fixme verbose
         headers = {
-            'icy-notice1'   : config.get('icy', 'notice1'),
-            'icy-notice2'   : config.get('icy', 'notice2'),
-            'icy-name'      : config.get('icy', 'name',0, {'hostname': socket.gethostname()}),
-            'icy-genre'     : config.get('icy', 'genre'),
-            'icy-url'       : config.get('icy', 'url'),
-            'icy-pub'       : config.getboolean('icy', 'pub'),
+            'icy-notice1'   : Config.notice_1,
+            'icy-notice2'   : Config.notice_2,
+            'icy-name'      : Config.icy_name,
+            'icy-genre'     : Config.icy_genre,
+            'icy-url'       : Config.icy_url,
+            'icy-pub'       : Config.icy_pub,
             #'icy-br'        : 128,
-            'icy-metaint'   : config.getint('icy', 'metaint'),
-            'content-type'  : config.get('icy', 'content_type')
+            'icy-metaint'   : Config.icy_metaint,
+            'content-type'  : Config.content_type
         }
-        [self.send_header(k,v) for k,v, in headers.iteritems()]
+        [self.send_header(k, v) for k, v, in headers.iteritems()]
         self.end_headers()
 
     def do_POST(self):
@@ -88,7 +91,8 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         # User-Agent: NSPlayer/4.1.0.3856
         # Host: 0x7be.org:18944
         # Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}
-        # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,request-context=1,max-duration=0
+        # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,
+        #           request-context=1,max-duration=0
         # Connection: Close
 
         """ squeezebox """
@@ -96,7 +100,8 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         # Cache-Control: no-cache
         # Accept: */*
         # Host: localhost:18944
-        # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN; utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
+        # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN;
+        #           utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
         # Icy-Metadata: 1
 
         H = self.headers
@@ -119,3 +124,10 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
 
         #Streamer( self.request, self.server.data ).stream( icy_client )
         Streamer( self.request ).stream( icy_client )
+
+
+def shutdown(signum, frame):
+    from lib.playlist import Playlist
+    Playlist().save()
+    sys.exit(0)
+signal.signal(signal.SIGTERM, shutdown)

@@ -1,9 +1,57 @@
-import re, os, sys, time, fnmatch, itertools, random, pprint
+import re
+import os
+import sys
+import time
+import fnmatch
+import random
+import cPickle as pickle
 
 from lib.logger import log
 from lib.audio import Audio
 from lib.config import Config
 from lib.data import DataManager
+
+label_bool = {True: 'on', False: 'off'}
+
+
+class PlaylistFile(object):
+
+    @staticmethod
+    def read():
+        try:
+            # Read an existing file
+            with open( Config.datapath, 'rb' ) as picklef:
+                data = pickle.load( picklef )
+                assert type(data) == dict
+            print "Playlist file initialized "
+        except:
+            # File non-existent or corrupt.
+            PlaylistFile.truncate()
+            return {}
+
+        return data
+
+    @staticmethod
+    def truncate():
+        try:
+            open(Config.datapath, 'wb')
+            return True
+        except Exception, e:
+            log.exception(e)
+        return False
+
+    @staticmethod
+    def save(data):
+        try:
+            print "writing data"
+            with open( Config.datapath, 'wb') as picklef:
+                pickle.dump(data, picklef)
+            print "wrote data"
+            return True
+        except Exception, e:
+            log.exception(e)
+        return False
+
 
 class Playlist(object):
 
@@ -13,13 +61,22 @@ class Playlist(object):
 
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
-        manager = DataManager(address=('', 18945), authkey="riddim")
+        manager = DataManager(address=('', 18945), authkey="secret")
         manager.connect()
         self.data = manager.get_data()
 
+        playlist_data = None
+        try:
+            playlist_data = self.data['playlist']
+        except KeyError:
+            playlist_data = PlaylistFile.read()
+
+        if playlist_data is None:
+            playlist_data = PlaylistFile.read()
+
         # set default playlist data
         default_data = {
-                'playlist'      : {},
+                'playlist'      : playlist_data,
                 'continue'      : True,
                 'repeat'        : False,
                 'shuffle'       : False,
@@ -35,26 +92,25 @@ class Playlist(object):
             except KeyError:
                 self.data[k] = default_data[k]
 
-        # self.playlist   = sorted(self.data['playlist'].keys())
-
     def __str__(self):
         index = self.data['index']
         pl = self.data['playlist']
         new_pl = []
-        for i,track in pl.iteritems():
-            # leader = "*" if int(i) == index and self.data['status'] == 'playing' else " "
+        for i, track in pl.iteritems():
             pre = post = " "
             if int(i) == index:
                 pre     = "*" * len(pre)
                 post    = " "
-            new_pl.append(' '.join([pre, '%0*d' % (len(pl[len(pl)-1]),i+1),"[", track['audio']['mimetype'],"] ",track['audio']['title'], post]))
-
+            new_pl.append(' '.join([pre, '%0*d' % \
+                (len(pl[len(pl) - 1]), i + 1), "[",
+                track['audio']['mimetype'], "] ", track['audio']['title'],
+                post]))
         return '\n'.join(new_pl)
 
-    def __getitem__(self,key):
+    def __getattr__(self, key):
         return self.data[key]
 
-    def __setitem__(self,key,value):
+    def __setitem__(self, key, value):
         self.data[key] = value
 
     def get_song(self):
@@ -67,13 +123,13 @@ class Playlist(object):
         try:
             song = playlist[self.data['index']]
             self.data['status'] = 'playing'
-            self.data['song'] = song['audio']['title']
+            self.data['song']   = song['audio']['title']
             return song
         except IndexError:
-            self.data['index'] = 9
+            self.data['index'] = 0
             return False
         except KeyError:
-            self.data['index'] = 9
+            self.data['index'] = 0
             return False
         except Exception, e:
             log.exception(e)
@@ -83,12 +139,13 @@ class Playlist(object):
         results = []
         for base, dirs, files in os.walk(path):
             matches = fnmatch.filter(files, pattern)
-            results.extend(os.path.realpath(os.path.join(base, m)) for m in matches)
+            results.extend(os.path.realpath(os.path.join(base, m)) for m
+                    in matches)
         return results
 
     def enqueue_list(self, path):
-        results = []
-        return self.files_by_pattern(path, '*.[mM][pP]3') + self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
+        return self.files_by_pattern(path, '*.[mM][pP]3') + \
+               self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self, paths):
         tracks = 0
@@ -104,7 +161,7 @@ class Playlist(object):
             for i in range(len(eL)):
                 ra = Audio(eL[i])
                 if ra.corrupt: continue
-                pl[i+last] = {
+                pl[i + last] = {
                         'path'      : eL[i],
                         'audio'     : ra.data()
                 }
@@ -123,14 +180,11 @@ class Playlist(object):
         self.next()
         print "bumped to ", self.data['index']
 
-    def status(self):
-        return self.data['status']
-
     def clear(self, regex=None):
 
         removed = []
         if regex:       # user passed in a regex
-            regex           = re.compile(regex,re.IGNORECASE)
+            regex           = re.compile(regex, re.IGNORECASE)
             data            = self.data
             old_playlist    = data['playlist']
             pl_keys         = sorted(old_playlist.keys())
@@ -145,7 +199,7 @@ class Playlist(object):
                 # index
                 if not re.search(regex, title):
                     new_playlist[i] = old_playlist[pl_key]
-                    i = i+1
+                    i = i + 1
                 else:
                     removed.append(pl_key)
                     print "x ",
@@ -184,36 +238,31 @@ class Playlist(object):
         return "%s tracks removed." % len(removed)
         #return self.query()
 
-    def song(self):
-        return self.data['song']
-
-    #def current(self):
-    #    return self.data['playlist'][self.data['index']]['audio'].title()
-
     def query(self):
 
         return """[riddim]  uptime:  %s
-%s:  %s
+%s:  %s [%s]
 shuffle: %s repeat: %s continue: %s
 %s tracks
 %s
 %s
-""" %   (
+""" % (
         self.uptime(),
-        self.status(), self.song(),
-        self.data['shuffle'], self.data['repeat'], self.data['continue'],
+        self.status, self.song, self.data['index'],
+        label_bool[self.data['shuffle']],
+        label_bool[self.data['repeat']],
+        label_bool[self.data['continue']],
         len(self.data['playlist']),
         30 * '*',
-        str(self)
-        )
+        self)
 
     def index(self, index):
 
-        if index == "+1": # corresponds to arg -n
+        if index == "+1":  # corresponds to option -n with no argument
             self.next()
         else:
             try:
-                self.data['index'] = int(index)-1
+                self.data['index'] = (int(index) - 1)
             except ValueError:
                 return "``%s'' is not an integer" % index
 
@@ -222,7 +271,8 @@ shuffle: %s repeat: %s continue: %s
         return self.query()
 
     def uptime(self):
-        return time.strftime('%H:%M:%S', time.gmtime(time.time()-self.data['started_at']))
+        return time.strftime('%H:%M:%S',
+                time.gmtime(time.time() - self.data['started_at']))
 
     def kontinue(self):
         # FIXME
@@ -248,5 +298,5 @@ shuffle: %s repeat: %s continue: %s
     def toggle(self, key):
         self.data[key] = not(bool(self.data[key]))
 
-if __name__ == '__main__':
-    print Playlist()
+    def save(self):
+        PlaylistFile.save( self.data['playlist'] )
