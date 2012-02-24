@@ -152,8 +152,12 @@ class Playlist(object):
         pl = self.data['playlist']
         for path in paths:
             log.info("adding %s" % path)
-            eL = self.enqueue_list(path)
-            eL.sort()
+            if os.path.isfile(path):
+                eL = [os.path.realpath(path)]
+            else:
+                eL = self.enqueue_list(path)
+                eL.sort()
+
             track_count = int(len(pl))
             if track_count == 0:    last = 0
             else:                   last = sorted(pl.keys())[-1] + 1
