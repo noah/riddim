@@ -53,15 +53,13 @@ if __name__ == "__main__":
             print playlist.shuffle()
         elif args.repeat:
             print playlist.repeat()
+        elif args.kontinue:
+            print playlist.kontinue()
         else:
             for action, arg in args.args_dict.items():
                     print {
                         "clear"         : playlist.clear,
                         "index"         : playlist.index,
-                        "query"         : playlist.query,
                         "enqueue"       : playlist.enqueue,
-                        "repeat"        : playlist.repeat,
-                        "continue"      : playlist.kontinue,
-                        "shuffle"       : playlist.shuffle
                     }[ action ]( arg )
     sys.exit(0)
