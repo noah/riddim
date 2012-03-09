@@ -1,8 +1,13 @@
-import os, sys, time, errno, socket, signal
+import os
+import sys
+import time
+import errno
+import socket
 
 from lib.config import Config
 from lib.server import Server
 from lib.logger import log
+
 
 class Control():
 
@@ -30,11 +35,11 @@ class Control():
 
         try:
             time.sleep(0.001)
-            Server((Config().hostname, int(Config().port)))
+            Server((Config().hostname, int(Config.port)))
             # will never reach this line
         except socket.error, se:
             if se.errno == errno.EACCES:
-                log.warn("Bad port: %s" % port)
+                log.warn("Bad port: %s" % Config.port)
                 sys.exit( se.errno )
             else:
                 log.exception(se)
@@ -47,11 +52,9 @@ class Control():
             try:
                 os.kill( pid, signal.SIGTERM )
                 log.info("killed: %s" % pid)
-            except OSError: # already died
+            except OSError:  # already died
                 pass
             Control.write_pid("")
 
         log.info("RiDDiM is stopped.")
         sys.exit( 0 )
-
-signal.signal(signal.SIGINT, lambda signal, frame: Control().stop)
