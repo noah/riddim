@@ -1,9 +1,8 @@
-import os
-import re
 import sys
 from argparse import ArgumentParser
 
 from lib.config import Config
+
 
 class Args(object):
 
@@ -42,7 +41,9 @@ class Args(object):
         parser.add_argument("-C", "--continue",
                                 action="store_true",
                                 default=False,
-                                help="Toggle continue")
+                                help="Toggle continue",
+                                dest="kontinue"  # avoid kw collision
+                                )
         parser.add_argument("-s", "--shuffle",
                                 action="store_true",
                                 default=False,
