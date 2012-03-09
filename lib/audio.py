@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os, subprocess
+import os
+import shlex
+import subprocess
 import mad
 
 try:
@@ -44,51 +46,52 @@ class AudioUtil(object):
     #
     ################################################################################
     # Convert and array of "bits" (MSB first) to its decimal value.
-    def bin2dec(self,x):
-       bits = [];
-       bits.extend(x);
-       bits.reverse();
+    def bin2dec(self, x):
+        bits = []
+        bits.extend(x)
+        bits.reverse()
 
-       multi = 1;
-       value = long(0);
-       for b in bits:
-          value += b * multi;
-          multi *= 2;
-       return value;
+        multi = 1
+        value = long(0)
+        for b in bits:
+            value += b * multi
+            multi *= 2
+        return value
 
     # Accepts a string of bytes (chars) and returns an array of bits
     # representing the bytes in big endian byte (Most significant byte/bit first)
     # order.  Each byte can have its higher bits ignored by passing an sz arg.
-    def bytes2bin(self, bytes, sz = 8):
-       if sz < 1 or sz > 8:
-          raise ValueError("Invalid sz value: " + str(sz));
+    def bytes2bin(self, bytes, sz=8):
+        if sz < 1 or sz > 8:
+            raise ValueError("Invalid sz value: " + str(sz))
 
-       retVal = [];
-       for b in bytes:
-          bits = [];
-          b = ord(b);
-          while b > 0:
-             bits.append(b & 1);
-             b >>= 1;
-          if len(bits) < sz:
-              bits.extend([0] * (sz - len(bits)));
-          elif len(bits) > sz:
-              bits = bits[:sz];
+        retVal = []
+        for b in bytes:
+            bits = []
+            b = ord(b)
+            while b > 0:
+                bits.append(b & 1)
+                b >>= 1
+            if len(bits) < sz:
+                bits.extend([0] * (sz - len(bits)))
+            elif len(bits) > sz:
+                bits = bits[:sz]
 
-          # Big endian byte order.
-          bits.reverse();
-          retVal.extend(bits);
+            # Big endian byte order.
+            bits.reverse()
+            retVal.extend(bits)
 
-       if len(retVal) == 0:
-          retVal = [0];
-       return retVal;
+        if len(retVal) == 0:
+            retVal = [0]
+        return retVal
+
 
 class Audio(AudioUtil):
 
     def __init__(self, path):
         self.path = path
         self.corrupt = False
-        self.mimetype = subprocess.Popen("/usr/bin/file -i \"%s\"" % path, shell=True, \
+        self.mimetype = subprocess.Popen(shlex.split("/usr/bin/file -i \"%s\"" % path),
                 stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
 
         if self.mimetype == 'audio/x-flac':
@@ -102,7 +105,7 @@ class Audio(AudioUtil):
             # application/octet-stream, but this is ok.
             self.audio = MP3(path, ID3=EasyID3)
 
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         try:
             return self.data()[key]
         except KeyError:
@@ -110,7 +113,7 @@ class Audio(AudioUtil):
 
     def __str__(self):
         tags = self.tags()
-        return ' - '.join([tags[0],tags[2]])
+        return ' - '.join([tags[0], tags[2]])
 
     def bitrate(self):
         bitrate = -1
@@ -157,10 +160,11 @@ class Audio(AudioUtil):
             #log.warning("no %s found" % e)
             pass
         except Exception, e:
+            log.exception(e)
             log.exception(self.audio)
             log.exception("Couldn't parse mimetype for %s" % self.path)
             self.corrupt = True
-        return [artist,album,title]
+        return [artist, album, title]
 
     def length(self):
         length = 0
