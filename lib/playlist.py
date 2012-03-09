@@ -23,7 +23,6 @@ class PlaylistFile(object):
             with open( Config.datapath, 'rb' ) as picklef:
                 data = pickle.load( picklef )
                 assert type(data) == dict
-            print "Playlist file initialized "
         except:
             # File non-existent or corrupt.
             PlaylistFile.truncate()
@@ -43,10 +42,8 @@ class PlaylistFile(object):
     @staticmethod
     def save(data):
         try:
-            print "writing data"
             with open( Config.datapath, 'wb') as picklef:
                 pickle.dump(data, picklef)
-            print "wrote data"
             return True
         except Exception, e:
             log.exception(e)
@@ -77,7 +74,7 @@ class Playlist(object):
         # set default playlist data
         default_data = {
                 'playlist'      : playlist_data,
-                'continue'      : True,
+                'continue'      : False,
                 'repeat'        : False,
                 'shuffle'       : False,
                 'status'        : 'stopped',
@@ -114,26 +111,15 @@ class Playlist(object):
         self.data[key] = value
 
     def get_song(self):
-        playlist = self.data['playlist']
-        if playlist is None:
-            return False
-        if self.data['index'] is None:
-            self.next()
-
+        index = self.data['index']
+        if index == -1: return False
         try:
-            song = playlist[self.data['index']]
-            self.data['status'] = 'playing'
-            self.data['song']   = song['audio']['title']
-            return song
-        except IndexError:
-            self.data['index'] = 0
-            return False
+            song = self.data['playlist'][self.data['index']]
         except KeyError:
-            self.data['index'] = 0
             return False
-        except Exception, e:
-            log.exception(e)
-            return False
+        self.data['status'] = 'playing'
+        self.data['song']   = song['audio']['title']
+        return song
 
     def files_by_pattern(self, path, pattern):
         results = []
@@ -178,11 +164,11 @@ class Playlist(object):
         return "Enqueued %s tracks in %s directories." % (tracks, len(paths))
 
     def remove(self):
+        index = int(self.data['index'])
         pl = self.data['playlist']
-        del pl[self.data['index']]
+        del pl[index]
         self.data['playlist'] = pl
         self.next()
-        print "bumped to ", self.data['index']
 
     def clear(self, regex=None):
 
@@ -266,20 +252,33 @@ shuffle: %s repeat: %s continue: %s
             self.next()
         else:
             try:
-                self.data['index'] = (int(index) - 1)
+                new_index   = int(index) - 1
+                (first_index, last_index) = self.index_bounds()
+                if new_index > last_index:
+                    new_index = last_index
+                elif new_index < first_index:
+                    new_index = first_index
+                self.data['index'] = new_index
             except ValueError:
                 return "``%s'' is not an integer" % index
 
-        self.data['skip'] = True
+        if self.data['status'] == 'playing':
+            self.data['skip'] = True
 
         return self.query()
+
+    def index_bounds(self):
+        sorted_indices = sorted(self.data['playlist'].keys())
+        try:
+            return (sorted_indices[0], sorted_indices[-1])
+        except IndexError:
+            return (0, 0)
 
     def uptime(self):
         return time.strftime('%H:%M:%S',
                 time.gmtime(time.time() - self.data['started_at']))
 
     def kontinue(self):
-        # FIXME
         self.toggle('continue')
         return self.query()
 
@@ -297,10 +296,19 @@ shuffle: %s repeat: %s continue: %s
         elif self.data['repeat']:
             pass
         else:
-            self.data['index'] += 1
+            new_index = int(self.data['index'] + 1)
+            if not self.data['continue']:
+                # prevent rollover
+                first_index, last_index = self.index_bounds()
+                if new_index > last_index:
+                    self.data['index'] = -1
+                    return
+        self.data['index'] = new_index
 
     def toggle(self, key):
         self.data[key] = not(bool(self.data[key]))
 
     def save(self):
         PlaylistFile.save( self.data['playlist'] )
+        # TODO
+        #PlaylistFile.save( self.data )
