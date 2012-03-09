@@ -58,8 +58,8 @@ class Scrobbler(threading.Thread):
                     (artist, album, track) = [escape(item) for item in song['audio']['tags']]
 
                     if type == NOW_PLAYING:
-                        log.debug("scrobbling now playing %s %s %s" %\
-                                (artist, track, album))
+                        #log.debug("scrobbling now playing %s %s %s" %\
+                        #        (artist, track, album))
                         self.login()
                         scrobbler.now_playing(
                                 artist,
@@ -76,8 +76,8 @@ class Scrobbler(threading.Thread):
                             if error:
                                 if (time.time() - etime) < 60:
                                     break
-                            log.debug("scrobbling played %s %s %s %s" %\
-                                    (artist, track, album, song['audio']['length']))
+                            #log.debug("scrobbling played %s %s %s %s" %\
+                            #        (artist, track, album, song['audio']['length']))
                             self.login()
                             scrobbler.submit(
                                 artist,
