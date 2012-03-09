@@ -6,6 +6,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 from lib.config import Config
 from lib.streamer import Streamer
+from lib.playlist import Playlist
 from lib.logger import log
 from lib.data import DataManager
 
@@ -109,7 +110,11 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         try:
             icy_client = (int(H['icy-metadata']) == 1)
         except KeyError, e:
-            log.exception("non-icy client:  %s" % e)
+            log.error("non-icy client:  %s" % e)
+            log.error(self.address_string())
+            return False  # googlebot?
+
+        if not icy_client: return False
 
         user_agent = None
         try:
@@ -126,8 +131,9 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         Streamer( self.request ).stream( icy_client )
 
 
-def shutdown(signum, frame):
-    from lib.playlist import Playlist
+def handle(num, frame):
+    log.info("Caught signal %s going down." % num)
     Playlist().save()
-    sys.exit(0)
-signal.signal(signal.SIGTERM, shutdown)
+    sys.exit( 0 )
+
+signal.signal(signal.SIGTERM, handle)
