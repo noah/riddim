@@ -14,7 +14,6 @@ class Streamer(object):
     def __init__(self, request):
 
         self.playlist       = Playlist()
-        #self.playlist       = sorted(self.data['playlist'].keys())
         self.request        = request
         self.byte_count     = 0
         self.total_bytes    = 0
@@ -161,10 +160,9 @@ class Streamer(object):
                     self.playlist.data['skip'] = False
                 self.dirty_meta = True
             except IOError, e:
-                #self.data['song'] = None
                 if e.errno == errno.EPIPE:
                     self.empty_scrobble_queue()
-                    log.exception("Broken pipe")
+                    log.info("Broken pipe.  Client disconnected.")
                 elif e.errno == errno.ECONNRESET:
                     self.empty_scrobble_queue()
                     #log.exception("Connection reset by peer")
