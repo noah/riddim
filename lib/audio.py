@@ -7,7 +7,7 @@ import mad
 
 try:
     # easyid3 maps the real id3 standard tag names to the same as the flac ones
-    from mutagen.mp3 import MP3
+    from mutagen.mp3 import MP3, HeaderNotFoundError
     from mutagen.flac import FLAC
     from mutagen.easyid3 import EasyID3
 except:
@@ -94,6 +94,8 @@ class Audio(AudioUtil):
         self.mimetype = subprocess.Popen(shlex.split("/usr/bin/file -i \"%s\"" % path),
                 stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
 
+        self.audio = None
+
         if self.mimetype == 'audio/x-flac':
             self.audio = FLAC(path)
         else:
@@ -103,7 +105,11 @@ class Audio(AudioUtil):
                         (self.mimetype, self.path))
             # Handle it anyway --  sometimes mp3 will have content-type
             # application/octet-stream, but this is ok.
-            self.audio = MP3(path, ID3=EasyID3)
+            try:
+                self.audio = MP3(path, ID3=EasyID3)
+            except HeaderNotFoundError, e:
+                log.error("File %s corrupt: %s" % (path, e))
+                self.corrupt = True
 
     def __getitem__(self, key):
         try:
