@@ -7,7 +7,6 @@ import random
 import cPickle as pickle
 
 from lib.logger import log
-from lib.audio import Audio
 from lib.config import Config
 from lib.data import DataManager
 
@@ -54,11 +53,10 @@ class Playlist(object):
 
     def __init__(self):
 
-        self.config = Config()
-
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
-        manager = DataManager(address=('', 18945), authkey="secret")
+        manager = DataManager(address=(Config.hostname,
+            Config.manager_port), authkey="secret")
         manager.connect()
         self.data = manager.get_data()
 
@@ -134,6 +132,7 @@ class Playlist(object):
                self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self, paths):
+        from lib.audio import Audio
         tracks = 0
         pl = self.data['playlist']
         for path in paths:
