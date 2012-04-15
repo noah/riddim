@@ -7,7 +7,6 @@ import random
 import cPickle as pickle
 
 from lib.logger import log
-from lib.audio import Audio
 from lib.config import Config
 from lib.data import DataManager
 
@@ -54,11 +53,10 @@ class Playlist(object):
 
     def __init__(self):
 
-        self.config = Config()
-
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
-        manager = DataManager(address=('', 18945), authkey="secret")
+        manager = DataManager(address=(Config.hostname,
+            Config.manager_port), authkey="secret")
         manager.connect()
         self.data = manager.get_data()
 
@@ -139,6 +137,7 @@ class Playlist(object):
 
     def enqueue(self, paths):
         tracks = streams = 0
+        from lib.audio import Audio
         pl = self.data['playlist']
         for path in paths:
             log.info("adding %s" % path)
@@ -188,6 +187,8 @@ class Playlist(object):
         self.next()
 
     # TODO clear() should call remove(); cli should call remove to strip
+    # would also be nice to return a list of *artists* whose tracks were
+    # removed
     # by int
     def clear(self, regex=None):
 

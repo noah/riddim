@@ -18,8 +18,9 @@ class Config(object):
         runpath         = join_path('/tmp')
         pidpath         = join_path(runpath, config.get('riddim', 'pidfile'))
         datapath        = join_path(basepath, 'data', config.get('riddim', 'datafile'))
-        hostname        = "0.0.0.0"
+        hostname        = config.get('riddim', 'hostname')
         port            = config.get('riddim', 'port')
+        manager_port    = config.getint('riddim', 'manager_port')
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
         metaint         = config.getint('icy', 'metaint')
