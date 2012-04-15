@@ -129,39 +129,56 @@ class Playlist(object):
                     in matches)
         return results
 
+    def is_stream_url(self, arg):
+        #from urlparse import urlparse
+        return False
+
     def enqueue_list(self, path):
         return self.files_by_pattern(path, '*.[mM][pP]3') + \
                self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self, paths):
-        tracks = 0
+        tracks = streams = 0
         pl = self.data['playlist']
         for path in paths:
             log.info("adding %s" % path)
+
+            eL = relay = None
+
+            # enqueue a single file argument
             if os.path.isfile(path):
                 eL = [os.path.realpath(path)]
+            # enqueue a relay stream object
+            elif self.is_stream_url(path):
+                relay
+                pass
+            # enqueue a directory (glob)
             else:
                 eL = self.enqueue_list(path)
                 eL.sort()
 
-            track_count = int(len(pl))
-            if track_count == 0:    last = 0
-            else:                   last = sorted(pl.keys())[-1] + 1
+            if eL is not None:
+                track_count = int(len(pl))
+                if track_count == 0:    last = 0
+                else:                   last = sorted(pl.keys())[-1] + 1
 
-            for i in range(len(eL)):
-                ra = Audio(eL[i])
-                if ra.corrupt: continue
-                pl[i + last] = {
-                        'path'      : eL[i],
-                        'audio'     : ra.data()
-                }
-                print ". ",
-                sys.stdout.flush()
-            print
-            tracks += int(len(pl)) - track_count
+                for i in range(len(eL)):
+                    ra = Audio(eL[i])
+                    if ra.corrupt: continue
+                    pl[i + last] = {
+                            'path'      : eL[i],
+                            'audio'     : ra.data()
+                    }
+                    print ". ",
+                    sys.stdout.flush()
+                print
+                tracks += int(len(pl)) - track_count
 
         self.data['playlist'] = pl
-        return "Enqueued %s tracks in %s directories." % (tracks, len(paths))
+        # update index
+        if self.data['status'] == 'stopped' and int(self.data['index']) == - 1:
+            self.data['index'] = 0
+        return "Enqueued %s tracks in %s directories (%s streams)." % (tracks, len(paths), streams)
 
     def remove(self):
         index = int(self.data['index'])
@@ -170,6 +187,8 @@ class Playlist(object):
         self.data['playlist'] = pl
         self.next()
 
+    # TODO clear() should call remove(); cli should call remove to strip
+    # by int
     def clear(self, regex=None):
 
         removed = []

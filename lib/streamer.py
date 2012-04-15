@@ -68,6 +68,7 @@ class Streamer(object):
 
             if not song:
                 log.info("no playlist, won't stream")
+                self.playlist.data['status'] = 'stopped'
                 self.byte_count = 0
                 self.empty_scrobble_queue()
                 return
