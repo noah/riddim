@@ -171,6 +171,7 @@ class Streamer(object):
                 else:
                     self.empty_scrobble_queue()
                     log.exception(errno.errorcode[e.errno])
+                self.playlist.data['status'] = 'stopped'
                 break  # while
             finally:
                 pipes = [mp3_pipe, flac_pipe]

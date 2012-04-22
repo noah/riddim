@@ -109,12 +109,13 @@ class Playlist(object):
         self.data[key] = value
 
     def get_song(self):
+        song = None
         index = self.data['index']
-        if index == -1: return False
+        if index == -1: return None
         try:
             song = self.data['playlist'][self.data['index']]
         except KeyError:
-            return False
+            return None
         self.data['status'] = 'playing'
         self.data['song']   = song['audio']['title']
         return song
@@ -250,20 +251,15 @@ class Playlist(object):
 
     def query(self):
 
-        return """[riddim]  uptime:  %s
-%s:  %s [%s]
-shuffle: %s repeat: %s continue: %s
-%s tracks
+        return """{riddim} up [%s] stat [%s] song [%s] track [%s/%s] shuf [%s] rep [%s] cont [%s]
 %s
 %s
-""" % (
-        self.uptime(),
-        self.status, self.song, self.data['index'],
+""" % ( self.uptime(),
+        self.status, self.song, self.data['index']+1, len(self.data['playlist']),
         label_bool[self.data['shuffle']],
         label_bool[self.data['repeat']],
         label_bool[self.data['continue']],
-        len(self.data['playlist']),
-        30 * '*',
+        72 * '*',
         self)
 
     def index(self, index):
