@@ -3,7 +3,17 @@
 import os
 import shlex
 import subprocess
-import mad
+
+try:
+    import mad
+except:
+    print """
+    you need mad
+        # pacman -S pymad
+        on archlinux
+    """
+    import sys
+    sys.exit(0)
 
 try:
     # easyid3 maps the real id3 standard tag names to the same as the flac ones
