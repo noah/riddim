@@ -72,63 +72,77 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        # Client candidates:
+        # Handle well-behaved bots
+        _path = self.path.strip()
+        log.info("Request path: %s" % _path)
+        if _path == "/robots.txt":
+            self.request.send("User-agent: *\nDisallow: /\n")
+        elif _path != "/":
+            self.request.send("Bad request.\n")
+        else:
+            # path is /
+            #
+            # examine some headers
 
-        """ cmus """
-        # GET / HTTP/1.0
-        # Host: 0x7be.org
-        # User-Agent: cmus/v2.3.2
-        # Icy-MetaData: 1
+            # Client candidates:
+            """ cmus """
+            # GET / HTTP/1.0
+            # Host: 0x7be.org
+            # User-Agent: cmus/v2.3.2
+            # Icy-MetaData: 1
 
-        """ mplayer """
-        # GET / HTTP/1.0
-        # Host: 0x7be.org:18944
-        # User-Agent: MPlayer/SVN-r31347-4.5.0
-        # Icy-MetaData: 1
-        # Connection: close
+            """ mplayer """
+            # GET / HTTP/1.0
+            # Host: 0x7be.org:18944
+            # User-Agent: MPlayer/SVN-r31347-4.5.0
+            # Icy-MetaData: 1
+            # Connection: close
 
-        # GET / HTTP/1.0
-        # Accept: */*
-        # User-Agent: NSPlayer/4.1.0.3856
-        # Host: 0x7be.org:18944
-        # Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}
-        # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,
-        #           request-context=1,max-duration=0
-        # Connection: Close
+            # GET / HTTP/1.0
+            # Accept: */*
+            # User-Agent: NSPlayer/4.1.0.3856
+            # Host: 0x7be.org:18944
+            # Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}
+            # Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,
+            #           request-context=1,max-duration=0
+            # Connection: Close
 
-        """ squeezebox """
-        # Connection: close
-        # Cache-Control: no-cache
-        # Accept: */*
-        # Host: localhost:18944
-        # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN;
-        #           utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
-        # Icy-Metadata: 1
+            """ squeezebox """
+            # Connection: close
+            # Cache-Control: no-cache
+            # Accept: */*
+            # Host: localhost:18944
+            # User-Agent: iTunes/4.7.1 (Linux; N; Linux; i686-linux; EN;
+            #           utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
+            # Icy-Metadata: 1
 
-        H = self.headers
-        icy_client = False
-        try:
-            icy_client = (int(H['icy-metadata']) == 1)
-        except KeyError, e:
-            log.error("non-icy client:  %s" % e)
-            log.error(self.address_string())
-            return False  # googlebot?
+            H = self.headers
+            icy_client = False
+            try:
+                icy_client = (int(H['icy-metadata']) == 1)
+            except KeyError, e:
+                log.error("non-icy client:  %s" % e)
+                log.error(self.address_string())
 
-        if not icy_client: return False
+            if not icy_client:
+                self.request.send("Bad client.\n Try http://cmus.sourceforge.net/\n")
+                return False
 
-        user_agent = None
-        try:
-            user_agent = H['user-agent']
-        except KeyError, e:
-            log.exception("Couldn't get user agent.")
+            user_agent = None
+            try:
+                user_agent = H['user-agent']
+            except KeyError, e:
+                log.exception("Couldn't get user agent.")
 
-        if user_agent:
-            log.info("User-Agent:  %s" % user_agent)
+            if user_agent:
+                log.info("User-Agent:  %s" % user_agent)
 
-        self.do_HEAD( icy_client )
+            self.do_HEAD( icy_client )
 
-        #Streamer( self.request, self.server.data ).stream( icy_client )
-        Streamer( self.request ).stream( icy_client )
+            #Streamer( self.request, self.server.data ).stream( icy_client )
+            Streamer( self.request ).stream( icy_client )
+
+        return 0
 
 
 def handle(num, frame):

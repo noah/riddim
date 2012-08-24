@@ -180,7 +180,12 @@ class Audio(AudioUtil):
             log.exception(self.audio)
             log.exception("Couldn't parse mimetype for %s" % self.path)
             self.corrupt = True
-        return [artist, album, title]
+
+        # Why do flac authors' tags suck?
+        _tags = [artist, album, title]
+        if not len(artist + album + title): _tags = [self.path, "", ""]
+
+        return _tags
 
     def length(self):
         length = 0

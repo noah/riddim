@@ -109,12 +109,13 @@ class Playlist(object):
         self.data[key] = value
 
     def get_song(self):
+        song = None
         index = self.data['index']
-        if index == -1: return False
+        if index == -1: return None
         try:
             song = self.data['playlist'][self.data['index']]
         except KeyError:
-            return False
+            return None
         self.data['status'] = 'playing'
         self.data['song']   = song['audio']['title']
         return song
@@ -127,40 +128,57 @@ class Playlist(object):
                     in matches)
         return results
 
+    def is_stream_url(self, arg):
+        #from urlparse import urlparse
+        return False
+
     def enqueue_list(self, path):
         return self.files_by_pattern(path, '*.[mM][pP]3') + \
                self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self, paths):
+        tracks = streams = 0
         from lib.audio import Audio
-        tracks = 0
         pl = self.data['playlist']
         for path in paths:
             log.info("adding %s" % path)
+
+            eL = relay = None
+
+            # enqueue a single file argument
             if os.path.isfile(path):
                 eL = [os.path.realpath(path)]
+            # enqueue a relay stream object
+            elif self.is_stream_url(path):
+                relay
+                pass
+            # enqueue a directory (glob)
             else:
                 eL = self.enqueue_list(path)
                 eL.sort()
 
-            track_count = int(len(pl))
-            if track_count == 0:    last = 0
-            else:                   last = sorted(pl.keys())[-1] + 1
+            if eL is not None:
+                track_count = int(len(pl))
+                if track_count == 0:    last = 0
+                else:                   last = sorted(pl.keys())[-1] + 1
 
-            for i in range(len(eL)):
-                ra = Audio(eL[i])
-                if ra.corrupt: continue
-                pl[i + last] = {
-                        'path'      : eL[i],
-                        'audio'     : ra.data()
-                }
-                print ". ",
-                sys.stdout.flush()
-            print
-            tracks += int(len(pl)) - track_count
+                for i in range(len(eL)):
+                    ra = Audio(eL[i])
+                    if ra.corrupt: continue
+                    pl[i + last] = {
+                            'path'      : eL[i],
+                            'audio'     : ra.data()
+                    }
+                    print ". ",
+                    sys.stdout.flush()
+                print
+                tracks += int(len(pl)) - track_count
 
         self.data['playlist'] = pl
-        return "Enqueued %s tracks in %s directories." % (tracks, len(paths))
+        # update index
+        if self.data['status'] == 'stopped' and int(self.data['index']) == - 1:
+            self.data['index'] = 0
+        return "Enqueued %s tracks in %s directories (%s streams)." % (tracks, len(paths), streams)
 
     def remove(self):
         index = int(self.data['index'])
@@ -169,6 +187,10 @@ class Playlist(object):
         self.data['playlist'] = pl
         self.next()
 
+    # TODO clear() should call remove(); cli should call remove to strip
+    # would also be nice to return a list of *artists* whose tracks were
+    # removed
+    # by int
     def clear(self, regex=None):
 
         removed = []
@@ -229,20 +251,15 @@ class Playlist(object):
 
     def query(self):
 
-        return """[riddim]  uptime:  %s
-%s:  %s [%s]
-shuffle: %s repeat: %s continue: %s
-%s tracks
+        return """{riddim} up [%s] stat [%s] song [%s] track [%s/%s] shuf [%s] rep [%s] cont [%s]
 %s
 %s
-""" % (
-        self.uptime(),
-        self.status, self.song, self.data['index'],
+""" % ( self.uptime(),
+        self.status, self.song, self.data['index']+1, len(self.data['playlist']),
         label_bool[self.data['shuffle']],
         label_bool[self.data['repeat']],
         label_bool[self.data['continue']],
-        len(self.data['playlist']),
-        30 * '*',
+        72 * '*',
         self)
 
     def index(self, index):
