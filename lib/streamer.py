@@ -1,12 +1,13 @@
+import time
 import errno
 import subprocess
 import Queue
 
 #from lib.data import Data
-from lib.config import Config
-from lib.scrobble import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
-from lib.logger import log
-from lib.playlist import Playlist
+from lib.config     import Config
+from lib.scrobble   import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
+from lib.logger     import log
+from lib.playlist   import Playlist
 
 
 class Streamer(object):
@@ -16,7 +17,6 @@ class Streamer(object):
         self.playlist       = Playlist()
         self.request        = request
         self.byte_count     = 0
-        self.total_bytes    = 0
 
         if Config.scrobble:
 
@@ -34,7 +34,8 @@ class Streamer(object):
         padding     = '\x00' * 16
         meta        = None
         if self.dirty_meta:
-            stream_title    = song['audio']['title'].encode('ascii', 'ignore')
+            songs           = unicode(song)
+            stream_title    = songs.encode('ascii', 'ignore')
             stream_url      = Config.url
 
             # 28 is the number of static characters in metadata (!)
@@ -57,17 +58,19 @@ class Streamer(object):
         f = None
         song = None
         while True:
-            if Config.scrobble:
-                if song:
+            if Config.scrobble and song:
                     # just played one . . . scrobble it
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song))
                     #log.debug("enqueued played")
+                    #log.debug(song)
 
             # new song
-            song = self.playlist.get_song()
+            song            = self.playlist.get_song()
+            song_start_time = time.time()
+            self.playlist.data["progress"] = 0
 
             if not song:
-                log.info("no playlist, won't stream")
+                log.warn("no playlist, won't stream")
                 self.playlist.data['status'] = 'stopped'
                 self.byte_count = 0
                 self.empty_scrobble_queue()
@@ -77,7 +80,7 @@ class Streamer(object):
                 #log.debug("enqueued now playing")
                 self.scrobble_queue.put(ScrobbleItem(NOW_PLAYING, song))
 
-            log.info('> %s' % song['audio']['title'])
+            log.info(u'> %s' % unicode(song))
 
             flac_pipe = mp3_pipe = None
             try:
@@ -94,9 +97,9 @@ class Streamer(object):
                 except:
                     pass
 
-                if song['audio']['mimetype'] == 'audio/x-flac':
+                if song.mimetype == 'audio/x-flac':
                     flac_pipe = subprocess.Popen(
-                            "/usr/bin/flac --silent -d \"%s\" --stdout" % song['path'],
+                            "/usr/bin/flac --silent -d \"%s\" --stdout" % song.path,
                             stdout=subprocess.PIPE,
                             shell=True)
                     mp3_pipe = subprocess.Popen(
@@ -108,12 +111,12 @@ class Streamer(object):
                     flac = True
                 else:  # assume mp3
                     try:
-                        f = file(song['path'], 'r')
-                        f.seek(song['audio']['start'])
+                        f = file(song.path, 'r')
+                        f.seek(song.start)
                     except IOError:
                         #import pprint
                         # file deleted?
-                        log.warn("removing %s.  file deleted?" % song['path'])
+                        log.warn("removing %s.  file deleted?" % song.path)
                         self.playlist.remove()
                         self.empty_scrobble_queue()
                         song = None
@@ -121,41 +124,49 @@ class Streamer(object):
 
                 self.dirty_meta = True
 
-                audio_size = song['audio']['size']
                 skip = False
-                while flac or (f.tell() < audio_size):
+                while flac or (f.tell() < song.size):
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
-                            self.request.send(metadata)
+                            self.request.send(metadata.encode('ascii', 'ignore'))
                         self.byte_count = 0
                     else:
                         if bytes_until_meta < buffer_size:
-                            n_bytes = bytes_until_meta
+                            chunk_bytes = bytes_until_meta
                         else:
-                            n_bytes = buffer_size
-                        buffer = f.read(n_bytes)
+                            chunk_bytes = buffer_size
+                        buffer = f.read(chunk_bytes)
 
                         self.request.send(buffer)
-                        self.byte_count += len(buffer)
-                        self.total_bytes += len(buffer)
+                        buflen = len(buffer)
+                        self.byte_count                     += buflen
+                        self.playlist.data["sum_bytes"]     += buflen
+                        elapsed = time.time() - song_start_time
+                        self.playlist.data['elapsed'] = elapsed
+                        # set percentage elapsed
+                        self.playlist.data["progress"] = float(elapsed * 100) / song.length
+
                         if len(buffer) == 0: break
 
                     if self.playlist.data['skip']:
                         log.info(">>")
                         skip = True
                         song = None  # don't scrobble
+                        self.playlist.data["elapsed"] = 0
+                        self.playlist.data["progress"] = 0
                         break
 
                     if self.playlist.data['status'] == 'stopped':
                         log.info(".")
                         skip = True
                         song = None  # don't scrobble
+                        self.playlist.data["elapsed"] = 0
                         break
 
                 if not skip:
-                    # increment the counter if we're not ffwd
+                    # increment the counter if we're not ffwding
                     self.playlist.next()
                 else:
                     self.playlist.data['skip'] = False
@@ -166,7 +177,6 @@ class Streamer(object):
                     log.info("Broken pipe.  Client disconnected.")
                 elif e.errno == errno.ECONNRESET:
                     self.empty_scrobble_queue()
-                    #log.exception("Connection reset by peer")
                     log.info("Client disconnected")
                 else:
                     self.empty_scrobble_queue()
@@ -174,8 +184,7 @@ class Streamer(object):
                 self.playlist.data['status'] = 'stopped'
                 break  # while
             finally:
-                pipes = [mp3_pipe, flac_pipe]
-                for pipe in pipes:
+                for pipe in [mp3_pipe, flac_pipe]:
                     if pipe is not None:
                         try:
                             pipe.kill()
