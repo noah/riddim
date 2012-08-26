@@ -57,4 +57,10 @@ class Control():
             Control.write_pid("")
 
         log.info("RiDDiM is stopped.")
-        sys.exit( 0 )
+        #sys.exit( 0 )
+
+    @staticmethod
+    def restart():
+        Control.stop()
+        time.sleep( 2 )
+        Control.start()
