@@ -2,15 +2,37 @@ import re
 import os
 import sys
 import time
+import math
 import fnmatch
 import random
 import cPickle as pickle
 
-from lib.logger import log
-from lib.config import Config
-from lib.data import DataManager
+from lib.logger     import log
+from lib.song       import Song
+from lib.config     import Config
+from lib.data       import DataManager
 
-label_bool = {True: 'on', False: 'off'}
+label_bool      = {True: 'on', False: 'off'}
+label_status    = {"stopped" : ".", "playing" : ">"}
+
+
+def filesizeformat(bytes):
+    """
+    Formats the value like a 'human-readable' file size (i.e. 13 KB, 4.1 MB,
+    102 bytes, etc).  Modified django
+    """
+    try:    bytes = float(bytes)
+    except (TypeError, ValueError, UnicodeDecodeError):
+        return "%s bytes" % 0
+
+    pretty = lambda x: round(x, 1)
+
+    if bytes < 1024: return "%s bytes" % pretty(bytes)
+    if bytes < 1024 * 1024: return "%s KB" % pretty((bytes / 1024))
+    if bytes < 1024 * 1024 * 1024: return "%s MB" % pretty((bytes / (1024 * 1024)))
+    if bytes < 1024 * 1024 * 1024 * 1024: return "%s GB" % pretty((bytes / (1024 * 1024 * 1024)))
+    if bytes < 1024 * 1024 * 1024 * 1024 * 1024: return "%s TB" % pretty((bytes / (1024 * 1024 * 1024 * 1024)))
+    return "%s PB" % pretty((bytes / (1024 * 1024 * 1024 * 1024 * 1024)))
 
 
 class PlaylistFile(object):
@@ -55,16 +77,13 @@ class Playlist(object):
 
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
-        manager = DataManager(address=(Config.hostname,
-            Config.manager_port), authkey="secret")
+        manager = DataManager(address=(Config.hostname, Config.manager_port), authkey="secret")
         manager.connect()
         self.data = manager.get_data()
 
         playlist_data = None
-        try:
-            playlist_data = self.data['playlist']
-        except KeyError:
-            playlist_data = PlaylistFile.read()
+        try:                playlist_data = self.data['playlist']
+        except KeyError:    playlist_data = PlaylistFile.read()
 
         if playlist_data is None:
             playlist_data = PlaylistFile.read()
@@ -78,7 +97,10 @@ class Playlist(object):
                 'status'        : 'stopped',
                 'index'         : 0,
                 'song'          : None,
-                'skip'          : False
+                'skip'          : False,
+                'sum_bytes'     : 0,
+                'progress'      : 0,
+                'elapsed'       : 0
         }
         for k, v in default_data.items():
             try:
@@ -88,18 +110,29 @@ class Playlist(object):
                 self.data[k] = default_data[k]
 
     def __str__(self):
-        index = self.data['index']
-        pl = self.data['playlist']
-        new_pl = []
-        for i, track in pl.iteritems():
-            pre = post = " "
-            if int(i) == index:
-                pre     = "*" * len(pre)
-                post    = " "
-            new_pl.append(' '.join([pre, '%0*d' % \
-                (len(pl[len(pl) - 1]), i + 1), "[",
-                track['audio']['mimetype'], "] ", track['audio']['title'],
-                post]))
+        index   = self.data['index']
+        pl      = self.data['playlist']
+        new_pl  = []
+        pl_len  = len(pl)
+        if pl_len > 0:
+            pad_digits = int(math.log10(pl_len)) + 1
+        else:
+            pl_len = 0
+        for i, song in pl.iteritems():
+            try:
+                pre = post = " "
+                if int(i) == index:
+                    pre     = "*" * len(pre)
+                    post    = " "
+                new_pl.append(' '.join([
+                    pre,
+                    '%*d' % (pad_digits, i + 1),
+                    "[", song.mimetype, "]",
+                    unicode(song),
+                    post
+                ]))
+            except:
+                log.exception(song)
         return '\n'.join(new_pl)
 
     def __getattr__(self, key):
@@ -109,15 +142,15 @@ class Playlist(object):
         self.data[key] = value
 
     def get_song(self):
-        song = None
-        index = self.data['index']
+        song    = None
+        index   = self.data['index']
         if index == -1: return None
-        try:
-            song = self.data['playlist'][self.data['index']]
-        except KeyError:
-            return None
+        try:                song = self.data['playlist'][self.data['index']]
+        except KeyError:    return None
+
         self.data['status'] = 'playing'
-        self.data['song']   = song['audio']['title']
+        self.data['song']   = song
+
         return song
 
     def files_by_pattern(self, path, pattern):
@@ -138,7 +171,6 @@ class Playlist(object):
 
     def enqueue(self, paths):
         tracks = streams = 0
-        from lib.audio import Audio
         pl = self.data['playlist']
         for path in paths:
             log.info("adding %s" % path)
@@ -150,7 +182,7 @@ class Playlist(object):
                 eL = [os.path.realpath(path)]
             # enqueue a relay stream object
             elif self.is_stream_url(path):
-                relay
+                relay   # TODO
                 pass
             # enqueue a directory (glob)
             else:
@@ -163,21 +195,23 @@ class Playlist(object):
                 else:                   last = sorted(pl.keys())[-1] + 1
 
                 for i in range(len(eL)):
-                    ra = Audio(eL[i])
-                    if ra.corrupt: continue
-                    pl[i + last] = {
-                            'path'      : eL[i],
-                            'audio'     : ra.data()
-                    }
+                    song = Song(eL[i])
+                    if song.corrupt: continue
+                    pl[i + last] = song
                     print ". ",
                     sys.stdout.flush()
                 print
                 tracks += int(len(pl)) - track_count
 
-        self.data['playlist'] = pl
-        # update index
+        try:
+            self.data['playlist'] = pl
+        except Exception, e:
+            log.exception(e)
+
+        # reached end of playlist, reset index
         if self.data['status'] == 'stopped' and int(self.data['index']) == - 1:
             self.data['index'] = 0
+
         return "Enqueued %s tracks in %s directories (%s streams)." % (tracks, len(paths), streams)
 
     def remove(self):
@@ -194,7 +228,7 @@ class Playlist(object):
     def clear(self, regex=None):
 
         removed = []
-        if regex:       # user passed in a regex
+        if regex:           # user passed in a regex
             regex           = re.compile(regex, re.IGNORECASE)
             data            = self.data
             old_playlist    = data['playlist']
@@ -204,11 +238,12 @@ class Playlist(object):
 
             i = 0
             for pl_key in pl_keys:
-                title = old_playlist[pl_key]['audio']['title']
+                old_song = old_playlist[pl_key]
+
                 # If the track does not match the removal regex (i.e.,
                 # should be kept), then append it and increment the
                 # index
-                if not re.search(regex, title):
+                if not re.search(regex, unicode(old_song)):
                     new_playlist[i] = old_playlist[pl_key]
                     i = i + 1
                 else:
@@ -247,20 +282,42 @@ class Playlist(object):
             self.data['playlist'] = {}
 
         return "%s tracks removed." % len(removed)
-        #return self.query()
+
+        # index           = self.data['index'] + 1
+        # pl_len          = len(self.data['playlist'])
+        # shuffle         = label_bool[self.data['shuffle']]
+        # repeat          = label_bool[self.data['repeat']]
+        # kontinue        = label_bool[self.data['continue']]
+        # pad             = (72 - len(name) + 1) * '*'
+        # Self            = unicode(self)
+        # if self.status == "playing":
+        #     percentage = int(( / song.size) / 100.0)
+        # else:
+        #     percentage = 0
 
     def query(self):
-
-        return """{riddim} up [%s] stat [%s] song [%s] track [%s/%s] shuf [%s] rep [%s] cont [%s]
-%s
-%s
-""" % ( self.uptime(),
-        self.status, self.song, self.data['index']+1, len(self.data['playlist']),
-        label_bool[self.data['shuffle']],
-        label_bool[self.data['repeat']],
-        label_bool[self.data['continue']],
-        72 * '*',
-        self)
+        name            = "riddim"
+        uptime          = self.uptime()
+        status_symbol   = label_status[self.status]
+        song            = self.get_song()
+        #
+        width           = 100
+        fill            = '='
+        blank           = '.'
+        step            = 100 / float(width)
+        #
+        percentage      = int(self.data["progress"] / step)
+        fill            = percentage * '='
+        blank           = (width - percentage) * '.'
+        q               = []
+        q.append("%s up %s sent %s total" % (name, uptime, filesizeformat(self.data["sum_bytes"])))
+        q.append("%s %s" % (status_symbol, song))
+        if self.status == "playing":
+            seconds_to_time = lambda x: time.strftime('%H:%M:%S', time.gmtime(x))
+            q.append("%s %s [%s>%s] %s%%" %
+                    (seconds_to_time(self.data["elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
+            q.append("%s" % (self))
+        return '\n'.join( q )
 
     def index(self, index):
 
