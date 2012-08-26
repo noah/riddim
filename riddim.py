@@ -43,6 +43,7 @@ if __name__ == "__main__":
         {
                 "start"     : Control().start,
                 "stop"      : Control().stop,
+                "restart"   : Control().restart,
         }[ args.signal ]()
 
     else:
@@ -62,4 +63,9 @@ if __name__ == "__main__":
                         "index"         : playlist.index,
                         "enqueue"       : playlist.enqueue,
                     }[ action ]( arg )
+
+    try:    sys.stdout.close()
+    except: pass
+    try:    sys.stderr.close()
+    except: pass
     sys.exit(0)
