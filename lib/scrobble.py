@@ -1,7 +1,12 @@
-import threading, time, os, datetime, sys, Queue, hashlib
-from urllib import quote, unquote
+import threading
+import time
+import os
+import datetime
+import sys
+import Queue
+import hashlib
+from urllib import unquote
 import ConfigParser
-from mutagen.id3 import ID3
 
 try:
     import scrobbler
@@ -15,6 +20,7 @@ from lib.logger import log
 NOW_PLAYING=0
 PLAYED=1
 
+
 class ScrobbleItem:
 
     def __init__(self, scrobble_type, song):
@@ -24,8 +30,10 @@ class ScrobbleItem:
         self.error = False
         self.etime = None
 
+
 def escape(str):
     return unquote(str)
+
 
 class Scrobbler(threading.Thread):
 
@@ -55,11 +63,11 @@ class Scrobbler(threading.Thread):
                     error = scrobble_item.error
                     etime = scrobble_item.etime
 
-                    (artist, album, track) = [escape(item) for item in song['audio']['tags']]
+                    (artist, album, track) = [escape(item) for item in song.tags]
 
                     if type == NOW_PLAYING:
-                        #log.debug("scrobbling now playing %s %s %s" %\
-                        #        (artist, track, album))
+                        log.debug("scrobbling now playing %s %s %s" %\
+                                (artist, track, album))
                         self.login()
                         scrobbler.now_playing(
                                 artist,
@@ -69,24 +77,25 @@ class Scrobbler(threading.Thread):
                         # what we want.
                     elif type == PLAYED:
                         # See: http://exhuma.wicked.lu/projects/python/scrobbler/api/public/scrobbler-module.html#login
-                        if (song['audio']['length'] > 30) and len(artist) and len(track):
+                        # if mimetype is wrong, length == 0
+                        if song.length < 30: log.warn("song length %s" % song.length)
 
-                            # wait 60 seconds before re-trying
-                            # submission
-                            if error:
-                                if (time.time() - etime) < 60:
-                                    break
-                            #log.debug("scrobbling played %s %s %s %s" %\
-                            #        (artist, track, album, song['audio']['length']))
-                            self.login()
-                            scrobbler.submit(
-                                artist,
-                                track,
-                                int(time.mktime(datetime.datetime.now().timetuple())),
-                                source=escape('P'),
-                                length=int(song['audio']['length']),
-                                album=escape(album))
-                            scrobbler.flush()
+                        # wait 60 seconds before re-trying
+                        # submission
+                        if error:
+                            if (time.time() - etime) < 60:
+                                break
+                        log.debug("scrobbling played %s %s %s %s" %\
+                                (artist, track, album, song.length))
+                        self.login()
+                        scrobbler.submit(
+                            artist,
+                            track,
+                            int(time.mktime(datetime.datetime.now().timetuple())),
+                            source=escape('P'),
+                            length=song.length,
+                            album=album)
+                        scrobbler.flush()
                 except Exception as e:
                     log.exception("scrobble error: %s" % e)
                     # put it back
