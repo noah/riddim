@@ -49,6 +49,8 @@ class Scrobbler(threading.Thread):
         password = hashlib.md5(config.get('scrobbler', 'password')).hexdigest()
         try:
             scrobbler.login(user=username, password=password)
+        except ProtocolError:
+            time.sleep(49)
         except Exception as e:
             log.exception("Couldn't login: %s" % e)
 
