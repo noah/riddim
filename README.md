@@ -11,7 +11,7 @@ following features:
 
 ## Installation and mini-tutorial
 
-```bash
+```
 # pip2 install mutagen pymad scrobbler
 % git clone https://github.com/noah/riddim.git
 % cd riddim
