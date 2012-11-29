@@ -1,112 +1,44 @@
 ## Introduction 
 
-riddim is an audio streaming server written in python.  It has the
+riddim is an audio streaming server written in python2.  It has the
 following features:
 
+        + Command-line only (yes, that's a feature)
+        + Correctly handles MP3 metadata
         + FLAC transcoding (lame)
         + Low memory footprint
         + Track scrobbling to Last.fm
 
-
-## Digital jukebox
-
-riddim maintains an internal list of mp3s that it plays in sequential
-order, like a digital jukebox.  
-
-Commands are used to manipulate the internal playlist state (enqueue,
-dequeue, display).
-
-## Synopsis
+## Installation and mini-tutorial
 
 ```bash
-% riddim -h
-usage: riddim [-h] [-k {stop,start,restart}] [-c REGEX] [-i INDEX] [-q]
-              [-e /PATH/TO/TRACKS [/PATH/TO/TRACKS ...]]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -k {stop,start},      --signal {stop,start}
-                        signal stop/start/status
-  -c REGEX, --clear REGEX
-                        clear playlist of tracks matching REGEX
-  -i INDEX, --index INDEX
-                        set now playing to index INDEX
-  -q, --query           display server state
-  -e /PATH/TO/TRACKS [/PATH/TO/TRACKS ...], --enqueue /PATH/TO/TRACKS [/PATH/TO/TRACKS ...]
-                        enqueue track(s)
-
+# pip2 install mutagen pymad scrobbler
+% git clone https://github.com/noah/riddim.git
+% cd riddim
+% $EDITOR riddim.cfg
+% ./riddim -k start
+% ./riddim -e /path/to/some/music
+% vlc -I curses http://localhost:18944
 ```
+Music should now be coming out of your speakers.
 
-The config file has some tweaks but you shouldn't have to change the defaults:
-
-        % $EDITOR riddim.cfg
-
-Like apachectl, riddim can be started, stopped, and
-restarted by passing the -k flag.
-
-        % ./riddim.py -k start
-
-## Using riddim to listen to streaming music
-
-On the server side, queue up some tracks:
-
-```bash
-% ./riddim.py --enqueue ./path/to/some_music
-```
-
-From the client, connect to the server:
-
-```bash
-% mplayer http://server:18944
-% vlc -I curses http://server:18944
-% cmus http://server:18944
-```
-
-(Music should now be coming out of your speakers).  Display the
+Once you have started the server, as above, you can manipulate the
 playlist:
 
 ```bash
-  % ./riddim.py -q
-
-  [riddim]  uptime:  00:00:13
-  playing:  Bob Marley & The Wailers - Stop That Train
-  10 tracks ******************************
-  * Bob Marley & The Wailers - Intro
-    Bob Marley & The Wailers - Rasta Man Chant
-    Bob Marley & The Wailers - Slave Driver
-    Bob Marley & The Wailers - Stop That Train
-    Bob Marley & The Wailers - No More Trouble
-    Bob Marley & The Wailers - 400 Years
-    Bob Marley & The Wailers - Stir It Up
-    Bob Marley & The Wailers - Concrete Jungle
-    Bob Marley & The Wailers - Get Up Stand Up
-    Bob Marley & The Wailers - Kinky Reggae
+% riddim -e Siamese\ Dream  # add a directory of tracks to the playlist ...
+% riddim -e 03.\ Today.mp3  # ... or a single track
+% riddim -i 9               # skip to 9th track in the playlist
+% riddim -c ^Smashing       # clear tracks from playlist via regex pattern
+% riddim -c .               # clear all tracks
+% riddim -h                 # show help
 ```
+N.B.: The length of time it takes before these changes will
+be reflected to a client listener is affected by the variable
+`buffer_size` in `riddim.cfg`.
 
-You can remove tracks by passing a regex to the `-c` (clear) flag:
 
-```bash
-    % riddim -c Jungle
-```
- 
-## Dependencies
-
-```bash
-        % python --version
-        Python 2.6.5
-
-        % pacman -Q mutagen  
-        mutagen 1.19-1
-
-        % pacman -Q pymad
-        pymad 0.6-3
-```
-
-## Optional Dependencies
-    
-```bash
-        # pip install scrobbler
-```
+## Audioscrobbler
 
 If you want to scrobble tracks, you will need to set scrobble=True in
 riddim.cfg and also create a scrobbler.cfg file with the following
@@ -115,6 +47,25 @@ contents:
     [scrobbler]
     username='Your Username'
     password='Your Password'
+
+## Configuring Apache (optional)
+
+riddim works well in combination with Apache or another web server.  The
+following enables streaming from a `VirtualHost` (so you can have a
+pretty url like `http://stream.your.tld`).  I use something like this:
+
+```
+<VirtualHost *:80>
+   ServerName stream.your.tld
+   ServerAdmin you@your.tld
+   ProxyPass / http://192.168.1.2:18944
+</VirtualHost>      
+```
+
+Of course, riddim will need to be running on host `192.168.1.2:18944`
+for that to work, but if you set it up correctly you can point your
+music streamer at `http://stream.your.tld` and listen to the music that
+way (cough ... thus defeating corporate firewalls ... cough).
 
 ## Contributors
 
