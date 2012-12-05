@@ -89,7 +89,7 @@ class Streamer(object):
 
                 # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
-                buffer_size         = 1024
+                buffer_size         = Config.buffer_size
                 metadata_interval   = Config.metaint
 
                 try:
@@ -103,7 +103,7 @@ class Streamer(object):
                             stdout=subprocess.PIPE,
                             shell=True)
                     mp3_pipe = subprocess.Popen(
-                            "/usr/bin/lame --quiet -V0 - -",
+                            "/usr/bin/lame %s - -" % Config.lame_args,
                             stdout=subprocess.PIPE,
                             shell=True,
                             stdin=flac_pipe.stdout)

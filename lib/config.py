@@ -23,7 +23,10 @@ class Config(object):
         manager_port    = config.getint('riddim', 'manager_port')
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
+        lame_args       = config.get('riddim', 'lame_args')
+        #
         metaint         = config.getint('icy', 'metaint')
+        buffer_size     = config.getint('icy', 'buffer_size')
         notice_1        = config.get('icy', 'notice1')
         notice_2        = config.get('icy', 'notice2')
         icy_name        = config.get('icy', 'name', 0, {'hostname': socket.gethostname()})
