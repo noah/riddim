@@ -26,7 +26,7 @@ from logger import log
 class AudioUtil(object):
     ################################################################################
     #
-    #  Copyright (C) 2010  Noah K. Tilton <noah@0x7be.org>
+    #  Copyright (C) 2010  Noah K. Tilton <noah@tilton.co>
     #  Copyright (C) 2002-2005  Travis Shirk <travis@pobox.com>
     #  Copyright (C) 2001  Ryan Finne <ryan@finnie.org>
     #
@@ -103,8 +103,12 @@ class Song(AudioUtil):
     def __init__(self, path):
         self.path       = path
         self.corrupt    = False
-        self.mimetype   = subprocess.Popen(shlex.split("/usr/bin/file -i \"%s\"" % path),
-                stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
+        try:
+            self.mimetype = subprocess.Popen([
+                    "/usr/bin/file", "-i", path],
+                    stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
+        except ValueError:
+            print(path)
 
         if self.mimetype == 'audio/x-flac':
             _flac = FLAC(path)

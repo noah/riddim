@@ -227,73 +227,78 @@ class Playlist(object):
     # by int
     def clear(self, regex=None):
 
-        removed = []
-        if regex:           # user passed in a regex
-            regex           = re.compile(regex, re.IGNORECASE)
-            data            = self.data
-            old_playlist    = data['playlist']
-            pl_keys         = sorted(old_playlist.keys())
-            old_index       = data['index']
-            new_playlist    = {}
+        try:
 
-            i = 0
-            for pl_key in pl_keys:
-                old_song = old_playlist[pl_key]
+            removed = []
+            if regex:           # user passed in a regex
+                regex           = re.compile(regex, re.IGNORECASE)
+                data            = self.data
+                old_playlist    = data['playlist']
+                pl_keys         = sorted(old_playlist.keys())
+                old_index       = data['index']
+                new_playlist    = {}
 
-                # If the track does not match the removal regex (i.e.,
-                # should be kept), then append it and increment the
-                # index
-                if not re.search(regex, unicode(old_song)):
-                    new_playlist[i] = old_playlist[pl_key]
-                    i = i + 1
-                else:
-                    removed.append(pl_key)
-                    print "x ",
-                    sys.stdout.flush()
+                i = 0
+                for pl_key in pl_keys:
+                    old_song = old_playlist[pl_key]
 
-            if len(removed) > 0:
-                # Then we may need to adjust now-playing pointer.  There
-                # are a few possibilities for mutating the playlist:
-                #
-                #   1) We clobbered the track at the index.  Reset
-                #   now-playing to the beginning of the playlist.
-                #
-                if old_index in removed:
-                    data['index'] = 0
-                    data['status'] = 'stopped'
-                    data['song'] = ''
-                    data['skip'] = True
-                else:
-                #
-                #   2) We removed n tracks coming before the index.
-                #   Shift now-playing index back n indices.
-                #   list or if we clobbered whatever it was pointing to in the
-                #   middle of the list.
-                    data['index'] = (old_index) - len([t for t in removed if t < old_index])
-                #
-                #   3) We removed n tracks coming after the index.
-                #   No re-ordering necessary
+                    # If the track does not match the removal regex (i.e.,
+                    # should be kept), then append it and increment the
+                    # index
+                    if not re.search(regex, unicode(old_song)):
+                        new_playlist[i] = old_playlist[pl_key]
+                        i = i + 1
+                    else:
+                        removed.append(pl_key)
+                        print "x ",
+                        sys.stdout.flush()
 
-            data['playlist'] = new_playlist
-            self.data = data
+                if len(removed) > 0:
+                    # Then we may need to adjust now-playing pointer.  There
+                    # are a few possibilities for mutating the playlist:
+                    #
+                    #   1) We clobbered the track at the index.  Reset
+                    #   now-playing to the beginning of the playlist.
+                    #
+                    if old_index in removed:
+                        data['index'] = 0
+                        data['status'] = 'stopped'
+                        data['song'] = ''
+                        data['skip'] = True
+                    else:
+                    #
+                    #   2) We removed n tracks coming before the index.
+                    #   Shift now-playing index back n indices.
+                    #   list or if we clobbered whatever it was pointing to in the
+                    #   middle of the list.
+                        data['index'] = (old_index) - len([t for t in removed if t < old_index])
+                    #
+                    #   3) We removed n tracks coming after the index.
+                    #   No re-ordering necessary
 
-        else:
-            # clear everything
-            self.data['playlist'] = {}
+                data['playlist'] = new_playlist
+                self.data = data
 
-        return "%s tracks removed." % len(removed)
+            else:
+                # clear everything
+                self.data['playlist'] = {}
 
-        # index           = self.data['index'] + 1
-        # pl_len          = len(self.data['playlist'])
-        # shuffle         = label_bool[self.data['shuffle']]
-        # repeat          = label_bool[self.data['repeat']]
-        # kontinue        = label_bool[self.data['continue']]
-        # pad             = (72 - len(name) + 1) * '*'
-        # Self            = unicode(self)
-        # if self.status == "playing":
-        #     percentage = int(( / song.size) / 100.0)
-        # else:
-        #     percentage = 0
+            return "%s tracks removed." % len(removed)
+
+            # index           = self.data['index'] + 1
+            # pl_len          = len(self.data['playlist'])
+            # shuffle         = label_bool[self.data['shuffle']]
+            # repeat          = label_bool[self.data['repeat']]
+            # kontinue        = label_bool[self.data['continue']]
+            # pad             = (72 - len(name) + 1) * '*'
+            # Self            = unicode(self)
+            # if self.status == "playing":
+            #     percentage = int(( / song.size) / 100.0)
+            # else:
+            #     percentage = 0
+        except:
+            print type(old_song)
+            print(old_song is None)
 
     def query(self):
         name            = "riddim"

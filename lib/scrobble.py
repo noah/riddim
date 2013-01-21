@@ -40,6 +40,7 @@ class Scrobbler(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
+        self.daemon = True
 
     def login(self):
         config = ConfigParser.ConfigParser()

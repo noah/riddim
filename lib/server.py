@@ -14,7 +14,8 @@ from lib.data import DataManager
 class Server(HTTPServer):
 
     def __init__(self, addr):
-        self.allow_reuse_address = 1
+        self.stopped = False
+        self.allow_reuse_address    = 1
         TCPServer.__init__(self, addr, ServerRequestHandler)
 
         # shared state
@@ -43,8 +44,18 @@ class Server(HTTPServer):
         manager.start()
 
         log.info("Bloops and bleeps at http://%s:%s" % self.server_address)
-        self.serve_forever()
+        try:
+            self.serve_forever()
+        except KeyboardInterrupt:
+            log.warn("SIGINT in server, going down.")
+            self.server_close()
+            self.stopped = True
+            self.manager.shutdown()
+            sys.exit(1)
 
+    def serve_forever(self):
+        while not self.stopped:
+            self.handle_request()
 
 class ServerRequestHandler(BaseHTTPRequestHandler):
 
@@ -140,14 +151,18 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
             self.do_HEAD( icy_client )
 
             #Streamer( self.request, self.server.data ).stream( icy_client )
-            Streamer( self.request ).stream( icy_client )
+            streamer = Streamer( self.request )
+            try:
+                streamer.stream( icy_client )
+            except KeyboardInterrupt:
+                self.server.stopped = True
 
         return 0
 
 
-def handle(num, frame):
-    log.info("Caught signal %s going down." % num)
-    Playlist().save()
-    sys.exit( 0 )
-
-signal.signal(signal.SIGTERM, handle)
+# def handle(num, frame):
+#     log.info("Caught signal %s going down." % num)
+#     Playlist().save()
+#     sys.exit( 0 )
+# 
+# signal.signal(signal.SIGTERM, handle)

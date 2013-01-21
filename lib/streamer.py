@@ -1,5 +1,6 @@
 import time
 import errno
+import shlex
 import subprocess
 import Queue
 
@@ -21,7 +22,9 @@ class Streamer(object):
         if Config.scrobble:
 
             self.scrobble_queue = Queue.Queue()
-            self.scrobbler      = Scrobbler( self.scrobble_queue ).start()
+            self.scrobbler      = Scrobbler( self.scrobble_queue )
+            self.scrobbler.daemon = True
+            self.scrobbler.start()
 
     # It's always a good day for smoking crack at Nullsoft!
     #   See the Amarok source for ideas on the (crappy) icecast metadata "protocol"
@@ -41,7 +44,7 @@ class Streamer(object):
             # 28 is the number of static characters in metadata (!)
             length          = len(stream_title) + len(stream_url) + 28
             pad             = 16 - length % 16
-            what = padding[:pad]
+            what            = padding[:pad]
             meta            = metadata % (((length + pad) / 16), stream_title, stream_url, what)
             self.dirty_meta = False
         else:
@@ -98,14 +101,18 @@ class Streamer(object):
                     pass
 
                 if song.mimetype == 'audio/x-flac':
-                    flac_pipe = subprocess.Popen(
-                            "/usr/bin/flac --silent -d \"%s\" --stdout" % song.path,
+                    flac_pipe = subprocess.Popen([
+                            "/usr/bin/flac", "--silent", "-d",
+                            song.path,
+                            "--stdout"],
                             stdout=subprocess.PIPE,
-                            shell=True)
+                            shell=False)
                     mp3_pipe = subprocess.Popen(
-                            "/usr/bin/lame %s - -" % Config.lame_args,
+                            (["/usr/bin/lame"]
+                            + shlex.split(Config.lame_args)
+                            + ["-", "-"]),
                             stdout=subprocess.PIPE,
-                            shell=True,
+                            shell=False,
                             stdin=flac_pipe.stdout)
                     f = mp3_pipe.stdout
                     flac = True
