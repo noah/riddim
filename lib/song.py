@@ -3,7 +3,6 @@
 import os
 import shlex
 import subprocess
-# import mad
 
 try:
     # easyid3 maps the real id3 standard tag names to the same as the flac ones

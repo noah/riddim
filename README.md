@@ -12,7 +12,7 @@ following features:
 ## Installation and mini-tutorial
 
 ```
-# pip2 install mutagen pymad scrobbler
+# pip2 install mutagen scrobbler
 % git clone https://github.com/noah/riddim.git
 % cd riddim
 % $EDITOR riddim.cfg
