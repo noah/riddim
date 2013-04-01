@@ -315,7 +315,13 @@ class Playlist(object):
         fill            = percentage * '='
         blank           = (width - percentage) * '.'
         q               = []
-        q.append("%s up %s sent %s total" % (name, uptime, filesizeformat(self.data["sum_bytes"])))
+        q.append("%s up %s sent %s total continue %s shuffle %s repeat %s index %s" % (name, uptime,
+            filesizeformat(self.data["sum_bytes"]),
+            self.data["continue"],
+            self.data["shuffle"],
+            self.data["repeat"],
+            self.data["index"]
+            ))
         q.append("%s %s" % (status_symbol, song))
         if self.status == "playing":
             seconds_to_time = lambda x: time.strftime('%H:%M:%S', time.gmtime(x))
@@ -381,7 +387,7 @@ class Playlist(object):
                 if new_index > last_index:
                     self.data['index'] = -1
                     return
-        self.data['index'] = new_index
+            self.data['index'] = new_index
 
     def toggle(self, key):
         self.data[key] = not(bool(self.data[key]))

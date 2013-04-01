@@ -29,7 +29,7 @@ class Server(HTTPServer):
         }
 
         # create a shared Data object
-        manager = DataManager(address=('', 18945), authkey="secret")
+        manager = DataManager(address=('', Config.manager_port), authkey="secret")
 
         # "Private" methods ('__'-prefixed) are *not* exported out of
         # the manager by default.  This includes stuff to make dict work

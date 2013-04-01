@@ -3,23 +3,23 @@ import socket
 import ConfigParser
 
 
-def join_path( *args ):
-    return os.path.join( *args )
+def join_path(*args):
+    return os.path.join(*args)
 
 
 class Config(object):
 
-        basepath    = os.path.dirname( os.path.dirname( __file__ ) )
+        basepath        = os.path.dirname(os.path.dirname(__file__))
         config = ConfigParser.ConfigParser()
 
         config.read( os.path.join(basepath, 'riddim.cfg') )
 
         # set up some config stuff that we will need
         runpath         = join_path('/tmp')
-        pidpath         = join_path(runpath, config.get('riddim', 'pidfile'))
         datapath        = join_path(basepath, 'data', config.get('riddim', 'datafile'))
         hostname        = config.get('riddim', 'hostname')
         port            = config.get('riddim', 'port')
+        pidpath         = join_path(runpath, "%s.%s" % (config.get('riddim', 'pidfile'), port))
         manager_port    = config.getint('riddim', 'manager_port')
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
