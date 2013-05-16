@@ -1,21 +1,18 @@
-import sys
-import time
-import signal
-from SocketServer import TCPServer
+from datetime       import datetime
+from SocketServer   import TCPServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
-from lib.config import Config
-from lib.streamer import Streamer
-from lib.playlist import Playlist
-from lib.logger import log
-from lib.data import DataManager
+from lib.config     import Config
+from lib.streamer   import Streamer
+from lib.logger     import log
+from lib.data       import DataManager
 
 
 class Server(HTTPServer):
 
     def __init__(self, addr):
-        self.stopped = False
         self.allow_reuse_address    = 1
+        self.hostname, self.port    = addr
         TCPServer.__init__(self, addr, ServerRequestHandler)
 
         # shared state
@@ -23,13 +20,15 @@ class Server(HTTPServer):
 
         # set server defaults
         self.data = {
-                'started_at'    : time.time(),
-                'port'          : Config.port,
-                'hostname'      : Config.hostname
+                'started_at'    : datetime.now(),
+                'port'          : self.port,
+                'hostname'      : Config.hostname,
+                'running'       : True
         }
 
         # create a shared Data object
-        manager = DataManager(address=('', Config.manager_port), authkey="secret")
+        self.manager = DataManager(address=('', self.port + 1),
+                 authkey=Config.authkey)
 
         # "Private" methods ('__'-prefixed) are *not* exported out of
         # the manager by default.  This includes stuff to make dict work
@@ -41,27 +40,32 @@ class Server(HTTPServer):
                 exposed=('__str__', '__delitem__', '__getitem__',
                     '__setitem__'))
 
-        manager.start()
+        self.manager.start()
+        self.manager.connect()
+        self.data = self.manager.get_data()
+
 
         log.info("Bloops and bleeps at http://%s:%s" % self.server_address)
-        try:
-            self.serve_forever()
-        except KeyboardInterrupt:
-            log.warn("SIGINT in server, going down.")
-            self.server_close()
-            self.stopped = True
-            self.manager.shutdown()
-            sys.exit(1)
+        self.serve_forever()
+        self.cleanup()
 
     def serve_forever(self):
-        while not self.stopped:
+        while self.data['running']:
+            print "handling requests"
             self.handle_request()
+        print "done handling requests (server got message)"
+
+    def cleanup(self):
+        log.debug("cleaning up")
+        self.manager.shutdown()
+        self.server_close()
+        #sys.exit(1)
+
 
 class ServerRequestHandler(BaseHTTPRequestHandler):
 
-    #def __init__(self, request, client_address, server):
-
     def do_HEAD(self, icy_client):
+        log.debug("head")
         #if icy_client:
         self.send_response(200, "ICY")
         # fixme verbose
@@ -80,16 +84,17 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        pass
+        time.sleep(6000)
 
     def do_GET(self):
+        log.debug("post")
         # Handle well-behaved bots
         _path = self.path.strip()
         log.info("Request path: %s" % _path)
         if _path == "/robots.txt":
-            self.request.send("User-agent: *\nDisallow: /\n")
+            self.send("User-agent: *\nDisallow: /\n")
         elif _path != "/":
-            self.request.send("Bad request.\n")
+            self.send_error(403, "Bad request.\n")
         else:
             # path is /
             #
@@ -127,8 +132,7 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
             #           utf8) SqueezeCenter, Squeezebox Server/7.4.1/28947
             # Icy-Metadata: 1
 
-            H = self.headers
-            icy_client = False
+            H, icy_client = self.headers, False
             try:
                 icy_client = (int(H['icy-metadata']) == 1)
             except KeyError, e:
@@ -136,33 +140,15 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
                 log.error(self.address_string())
 
             if not icy_client:
-                self.request.send("Bad client.\n Try http://cmus.sourceforge.net/\n")
+                self.send_response(400, "Bad client.\n Try http://cmus.sourceforge.net/\n")
                 return False
 
             user_agent = None
-            try:
-                user_agent = H['user-agent']
-            except KeyError, e:
-                log.exception("Couldn't get user agent.")
-
-            if user_agent:
-                log.info("User-Agent:  %s" % user_agent)
+            try:                user_agent = H['user-agent']
+            except KeyError, e: log.exception("Couldn't get user agent.")
+            if user_agent:      log.info("User-Agent:  %s" % user_agent)
 
             self.do_HEAD( icy_client )
-
-            #Streamer( self.request, self.server.data ).stream( icy_client )
-            streamer = Streamer( self.request )
-            try:
-                streamer.stream( icy_client )
-            except KeyboardInterrupt:
-                self.server.stopped = True
+            Streamer( self.request, self.server.port ).stream( icy_client )
 
         return 0
-
-
-# def handle(num, frame):
-#     log.info("Caught signal %s going down." % num)
-#     Playlist().save()
-#     sys.exit( 0 )
-# 
-# signal.signal(signal.SIGTERM, handle)
