@@ -4,7 +4,6 @@ import shlex
 import subprocess
 import Queue
 
-#from lib.data import Data
 from lib.config     import Config
 from lib.scrobble   import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
 from lib.logger     import log
@@ -13,9 +12,9 @@ from lib.playlist   import Playlist
 
 class Streamer(object):
 
-    def __init__(self, request):
+    def __init__(self, request, port):
 
-        self.playlist       = Playlist()
+        self.playlist       = Playlist(port)
         self.request        = request
         self.byte_count     = 0
 
@@ -60,7 +59,7 @@ class Streamer(object):
     def stream(self, icy_client=False):
         f = None
         song = None
-        while True:
+        while self.playlist.data['running']:
             if Config.scrobble and song:
                     # just played one . . . scrobble it
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song))
@@ -85,10 +84,10 @@ class Streamer(object):
 
             log.info(u'> %s' % unicode(song))
 
-            flac_pipe = mp3_pipe = None
+            transcode_pipe = mp3_pipe = None
             try:
                 # sorry code gods
-                flac = False
+                transcode= False
 
                 # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
@@ -100,8 +99,8 @@ class Streamer(object):
                 except:
                     pass
 
-                if song.mimetype == 'audio/x-flac':
-                    flac_pipe = subprocess.Popen([
+                if song.mimetype == "audio/x-flac":
+                    transcode_pipe = subprocess.Popen([
                             "/usr/bin/flac", "--silent", "-d",
                             song.path,
                             "--stdout"],
@@ -113,9 +112,26 @@ class Streamer(object):
                             + ["-", "-"]),
                             stdout=subprocess.PIPE,
                             shell=False,
-                            stdin=flac_pipe.stdout)
+                            stdin=transcode_pipe.stdout)
                     f = mp3_pipe.stdout
-                    flac = True
+                    transcode = True
+                elif song.mimetype in ["video/mp4"]:
+                    transcode_pipe = subprocess.Popen([
+                            "/usr/bin/ffmpeg",
+                            "-loglevel", "quiet",
+                            "-i", song.path,
+                            "-vn", "-f", "wav", "pipe:1"],
+                            stdout=subprocess.PIPE,
+                            shell=False)
+                    mp3_pipe = subprocess.Popen(
+                            (["/usr/bin/lame"]
+                            + shlex.split(Config.lame_args)
+                            + ["-", "-"]),
+                            stdout=subprocess.PIPE,
+                            shell=False,
+                            stdin=transcode_pipe.stdout)
+                    f = mp3_pipe.stdout
+                    transcode = True
                 else:  # assume mp3
                     try:
                         f = file(song.path, 'r')
@@ -132,7 +148,7 @@ class Streamer(object):
                 self.dirty_meta = True
 
                 skip = False
-                while flac or (f.tell() < song.size):
+                while self.playlist.data['running'] and (transcode or (f.tell() < song.size)):
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
@@ -190,8 +206,10 @@ class Streamer(object):
                     log.exception(errno.errorcode[e.errno])
                 self.playlist.data['status'] = 'stopped'
                 break  # while
+            except KeyboardInterrupt:
+                self.playlist.data['running']   = False
             finally:
-                for pipe in [mp3_pipe, flac_pipe]:
+                for pipe in [mp3_pipe, transcode_pipe]:
                     if pipe is not None:
                         try:
                             pipe.kill()

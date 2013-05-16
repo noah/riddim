@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import shlex
+import sys
 import subprocess
 
 try:
@@ -14,7 +14,6 @@ except:
         # pacman -S mutagen
         on archlinux
     """
-    import sys
     sys.exit(0)
 
 
@@ -109,6 +108,8 @@ class Song(AudioUtil):
         except ValueError:
             print(path)
 
+        print self.mimetype
+
         if self.mimetype == 'audio/x-flac':
             _flac = FLAC(path)
             try:    self.tracknumber = int(_flacget(_flac, "tracknumber", 0))
@@ -133,13 +134,18 @@ class Song(AudioUtil):
                 except HeaderNotFoundError, e:
                     log.error("File %s corrupt: %s" % (path, e))
                     self.corrupt = True
+        elif self.mimetype in ["video/mp4", "video/x-matroska"]:
+            # Allow videos to be enqueued, from which we will extract a
+            # wav and transcode to mp3 on the fly...
+            self.tracknumber = self.length = 100000
+            self.artist = self.album = self.title = os.path.basename(self.path)
         else:
-            log.warn("Mimetype %s unsupported %s" % \
+            log.warn("Mimetype %s unsupported %s" %
                     (self.mimetype, self.path))
             self.corrupt = True
 
         if not self.corrupt:
-            self.size  = os.stat(self.path)[6]
+            self.size  = os.stat(self.path).st_size
             self.start = self._start()
             self.tags  = filter(lambda x: x != '', self._tags())
 
