@@ -6,10 +6,11 @@ import math
 import fnmatch
 import random
 import cPickle as pickle
+from datetime import datetime
 
+from lib.config     import Config
 from lib.logger     import log
 from lib.song       import Song
-from lib.config     import Config
 from lib.data       import DataManager
 
 label_bool      = {True: 'on', False: 'off'}
@@ -73,11 +74,14 @@ class PlaylistFile(object):
 
 class Playlist(object):
 
-    def __init__(self):
+    def __init__(self, port):
 
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
-        manager = DataManager(address=(Config.hostname, Config.manager_port), authkey="secret")
+
+        # manager port is one higher than listen port
+        manager = DataManager(address=(Config.hostname, port + 1),
+                authkey=Config.authkey)
         manager.connect()
         self.data = manager.get_data()
 
@@ -100,7 +104,7 @@ class Playlist(object):
                 'skip'          : False,
                 'sum_bytes'     : 0,
                 'progress'      : 0,
-                'elapsed'       : 0
+                'elapsed'       : 0,
         }
         for k, v in default_data.items():
             try:
@@ -145,7 +149,7 @@ class Playlist(object):
         song    = None
         index   = self.data['index']
         if index == -1: return None
-        try:                song = self.data['playlist'][self.data['index']]
+        try:                song = self.song()
         except KeyError:    return None
 
         self.data['status'] = 'playing'
@@ -303,17 +307,14 @@ class Playlist(object):
     def query(self):
         name            = "riddim"
         uptime          = self.uptime()
-        status_symbol   = label_status[self.status]
+        status_symbol   = label_status[ self.status ]
         song            = self.get_song()
         #
-        width           = 100
+        width           = 72
         fill            = '='
         blank           = '.'
         step            = 100 / float(width)
         #
-        percentage      = int(self.data["progress"] / step)
-        fill            = percentage * '='
-        blank           = (width - percentage) * '.'
         q               = []
         q.append("%s up %s sent %s total continue %s shuffle %s repeat %s index %s" % (name, uptime,
             filesizeformat(self.data["sum_bytes"]),
@@ -321,9 +322,12 @@ class Playlist(object):
             self.data["shuffle"],
             self.data["repeat"],
             self.data["index"]
-            ))
+        ))
         q.append("%s %s" % (status_symbol, song))
         if self.status == "playing":
+            percentage      = int(self.data["progress"] / step)
+            fill            = percentage * '='
+            blank           = (width - percentage) * '.'
             seconds_to_time = lambda x: time.strftime('%H:%M:%S', time.gmtime(x))
             q.append("%s %s [%s>%s] %s%%" %
                     (seconds_to_time(self.data["elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
@@ -338,10 +342,8 @@ class Playlist(object):
             try:
                 new_index   = int(index) - 1
                 (first_index, last_index) = self.index_bounds()
-                if new_index > last_index:
-                    new_index = last_index
-                elif new_index < first_index:
-                    new_index = first_index
+                if new_index > last_index:      new_index = last_index
+                elif new_index < first_index:   new_index = first_index
                 self.data['index'] = new_index
             except ValueError:
                 return "``%s'' is not an integer" % index
@@ -359,11 +361,33 @@ class Playlist(object):
             return (0, 0)
 
     def uptime(self):
-        return time.strftime('%H:%M:%S',
-                time.gmtime(time.time() - self.data['started_at']))
+        delta = datetime.now() - self.data['started_at']
+        hours, _ = divmod(delta.seconds, 3600)
+        minutes, seconds = divmod(_, 60)
+        return "%sd %02dh %02dm %02ds" % \
+               (delta.days, hours, minutes, seconds)
 
     def kontinue(self):
         self.toggle('continue')
+        return self.query()
+
+    def song(self):
+        return self.data['playlist'][self.data['index']]
+
+    def next_album(self):
+        album_this = self.song().album
+        while True:
+            self.next()
+            album_next = self.song().album
+            if album_this != album_next: break
+        return self.query()
+
+    def next_artist(self):
+        artist_this = self.song().artist.lower()
+        while True:
+            self.next()
+            artist_next = self.song().artist.lower()
+            if artist_this != artist_next: break
         return self.query()
 
     def repeat(self):
@@ -385,7 +409,7 @@ class Playlist(object):
                 # prevent rollover
                 first_index, last_index = self.index_bounds()
                 if new_index > last_index:
-                    self.data['index'] = -1
+                    self.data['index'] = 0
                     return
             self.data['index'] = new_index
 
