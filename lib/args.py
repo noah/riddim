@@ -3,6 +3,8 @@ from argparse import ArgumentParser
 
 from lib.config import Config
 
+from lib.logger import log
+
 
 class Args(object):
 
@@ -11,52 +13,73 @@ class Args(object):
         parser      = ArgumentParser()
 
         # server controls a la apachectl
-        signals = ["stop", "start", "restart"]
-        mg = parser.add_mutually_exclusive_group()
-        mg.add_argument("-k", "--signal",
-                                help="signal stop/start/status",
-                                choices=signals,
-                                default=False)
+        parser.add_mutually_exclusive_group().add_argument("-k", "--signal",
+                        help="signal stop/start/status",
+                        choices=["stop", "start", "restart"],
+                        default=False)
 
-        # playlist manipulation
-        parser.add_argument("-c", "--clear",
-                                help="clear playlist of tracks matching REGEX",
-                                metavar="REGEX")
-        parser.add_argument("-n", "--index",
-                                help="set now playing to index INDEX",
-                                const="+1",
-                                nargs="?",
-                                metavar="INDEX")
-        parser.add_argument("-q", "--query",
-                                action="store_true",
-                                default=False,
-                                help="display server state")
-        parser.add_argument("-e", "--enqueue",
-                                metavar="/PATH/TO/TRACKS",
-                                help="enqueue track(s)", nargs="+")
-        parser.add_argument("-r", "--repeat",
-                                action="store_true",
-                                default=False,
-                                help="Toggle song repeat")
-        parser.add_argument("-C", "--continue",
-                                action="store_true",
-                                default=False,
-                                help="Toggle continue",
-                                dest="kontinue"  # avoid kw collision
-                                )
-        parser.add_argument("-s", "--shuffle",
-                                action="store_true",
-                                default=False,
-                                help="Toggle shuffle")
+        # CLI options
+        [parser.add_argument( *_, **__) for _, __ in [
+                [("-C", "--continue"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "toggle continue",
+                    "dest"      : "kontinue"  # avoid kw collision
+                }],
+                [("-N", "--next-album"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "skip forward to the next album",
+                }],
+                [("-A", "--next-artist"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "skip forward to the next artist",
+                }],
+                [("-c", "--clear"), {
+                    "help"      : "clear playlist of tracks matching REGEX",
+                    "metavar"   : "REGEX"
+                }],
+                [("-e", "--enqueue"), {
+                    "metavar"   : "/PATH/TO/TRACKS",
+                    "help"      : "enqueue track(s)",
+                    "nargs"     : "+"
+                }],
+                [( "-n", "--index"), {
+                    "help"      : "set now playing to index INDEX",
+                    "metavar"   : "INDEX",
+                    "const"     : "+1",
+                    "nargs"     : "?"
+                }],
+                [("-p", "--port"), {
+                    "type"      : int,
+                    "default"   : 18944 # (ridd)
+                }],
+                [("-q", "--query"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "display server state"
+                }],
+                [("-r", "--repeat"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "Toggle song repeat"
+                }],
+                [("-s", "--shuffle"), {
+                    "action"    : "store_true",
+                    "default"   : False,
+                    "help"      : "Toggle shuffle"
+                }],
+        ]]
 
         self.args       = parser.parse_args()
         self.args_dict  = vars(self.args)
 
-        # remove null (unselected) options
+        # remove null (unselected) and default options
         for op, arg in self.args_dict.items():
             if not arg: del self.args_dict[op]
 
-        if len(self.args_dict.keys()) == 0:
+        if len(self.args_dict.keys()) == 1: # (port always present)
             # bail on no arguments
             parser.print_help()
             sys.exit(-1)
