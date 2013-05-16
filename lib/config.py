@@ -7,20 +7,21 @@ def join_path(*args):
     return os.path.join(*args)
 
 
+
 class Config(object):
 
+        running         = True
         basepath        = os.path.dirname(os.path.dirname(__file__))
-        config = ConfigParser.ConfigParser()
+        config          = ConfigParser.ConfigParser()
+        config.read( join_path(basepath, 'riddim.cfg') )
 
-        config.read( os.path.join(basepath, 'riddim.cfg') )
-
+        authkey         = open(join_path(basepath, "secret"),'r').read()
         # set up some config stuff that we will need
         runpath         = join_path('/tmp')
         datapath        = join_path(basepath, 'data', config.get('riddim', 'datafile'))
-        hostname        = config.get('riddim', 'hostname')
-        port            = config.get('riddim', 'port')
+        hostname        = socket.gethostname()
+        port            = None # set in lib/args.py
         pidpath         = join_path(runpath, "%s.%s" % (config.get('riddim', 'pidfile'), port))
-        manager_port    = config.getint('riddim', 'manager_port')
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
         lame_args       = config.get('riddim', 'lame_args')
