@@ -16,9 +16,9 @@ except ImportError:
     sys.exit(-1)
 
 from lib.logger import log
+from lib.config import Config
 
-NOW_PLAYING=0
-PLAYED=1
+NOW_PLAYING, PLAYED = 0, 1
 
 
 class ScrobbleItem:
@@ -50,14 +50,14 @@ class Scrobbler(threading.Thread):
         password = hashlib.md5(config.get('scrobbler', 'password')).hexdigest()
         try:
             scrobbler.login(user=username, password=password)
-        except ProtocolError:
+        except scrobbler.ProtocolError:
             time.sleep(49)
         except Exception as e:
             log.exception("Couldn't login: %s" % e)
 
     def run(self):
         # well this is just fugly.  call it "experimental"
-        while True:
+        while Config.running:
             try:
                 scrobble_item = self.queue.get(0)
                 try:
@@ -69,7 +69,7 @@ class Scrobbler(threading.Thread):
                     (artist, album, track) = [escape(item) for item in song.tags]
 
                     if type == NOW_PLAYING:
-                        log.debug("scrobbling now playing %s %s %s" %\
+                        log.debug("scrobbling now playing %s %s %s" %
                                 (artist, track, album))
                         self.login()
                         scrobbler.now_playing(
@@ -88,7 +88,7 @@ class Scrobbler(threading.Thread):
                         if error:
                             if (time.time() - etime) < 60:
                                 break
-                        log.debug("scrobbling played %s %s %s %s" %\
+                        log.debug("scrobbling played %s %s %s %s" %
                                 (artist, track, album, song.length))
                         self.login()
                         scrobbler.submit(
