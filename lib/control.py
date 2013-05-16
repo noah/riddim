@@ -3,64 +3,66 @@ import sys
 import time
 import errno
 import socket
+import signal
 
 from lib.config import Config
 from lib.server import Server
 from lib.logger import log
+from lib.data import set_data
 
 
-class Control():
+class Control(object):
 
-    @staticmethod
-    def read_pid():
+    def __init__(self, port):
+        self.port = port
+
+    def read_pid(self):
         try:
             with open(Config.pidpath, 'r') as f:
                 return int( f.read().strip() )
         except:
             return False
 
-    @staticmethod
-    def write_pid(pid):
+    def write_pid(self, pid):
         with open(Config.pidpath, 'w') as f:
             f.write( str(pid) )
 
-    @staticmethod
-    def start():
-        pid = Control.read_pid()
+    def start(self):
+        pid = self.read_pid()
         if pid:
             log.error("Server already running, pid %s." % pid)
             sys.exit( -1 )
         else:
-            Control.write_pid( os.getpid() )
+            self.write_pid( os.getpid() )
 
         try:
             time.sleep(0.001)
-            Server((Config().hostname, int(Config.port)))
+            Server((Config.hostname, self.port))
             # will never reach this line
         except socket.error, se:
             if se.errno == errno.EACCES:
-                log.warn("Bad port: %s" % Config.port)
+                log.warn("Bad port: %s" % self.port)
                 sys.exit( se.errno )
             else:
                 log.exception(se)
+        except KeyboardInterrupt:
+            pass
 
-    @staticmethod
-    def stop():
-        pid = Control.read_pid()
+    def stop(self):
+        time.sleep(0.1)
+        pid = self.read_pid()
         if pid:
-            import signal
             try:
-                os.kill( pid, signal.SIGTERM )
-                log.info("killed: %s" % pid)
-            except OSError:  # already died
+                set_data(self.port, 'running', False)
+                #os.kill( pid, signal.SIGTERM)
+            except OSError:  # already dead
                 pass
-            Control.write_pid("")
+            except socket.error, se:
+                if se.errno == errno.ECONNREFUSED:
+                    log.warn("not running")
+            self.write_pid("")
 
-        log.info("RiDDiM is stopped.")
-        #sys.exit( 0 )
-
-    @staticmethod
-    def restart():
-        Control.stop()
-        time.sleep( 2 )
-        Control.start()
+    def restart(self):
+        self.stop()
+        time.sleep(1)
+        self.start()
