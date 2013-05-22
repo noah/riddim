@@ -108,8 +108,6 @@ class Song(AudioUtil):
         except ValueError:
             print(path)
 
-        print self.mimetype
-
         if self.mimetype == 'audio/x-flac':
             _flac = FLAC(path)
             try:    self.tracknumber = int(_flacget(_flac, "tracknumber", 0))
