@@ -115,7 +115,7 @@ class Streamer(object):
                             stdin=transcode_pipe.stdout)
                     f = mp3_pipe.stdout
                     transcode = True
-                elif song.mimetype in ["video/mp4"]:
+                elif song.mimetype[0:5] == "video":
                     transcode_pipe = subprocess.Popen([
                             "/usr/bin/ffmpeg",
                             "-loglevel", "quiet",
