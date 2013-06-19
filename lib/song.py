@@ -103,8 +103,8 @@ class Song(AudioUtil):
         self.corrupt    = False
         try:
             self.mimetype = subprocess.Popen([
-                    "/usr/bin/file", "-i", path],
-                    stdout=subprocess.PIPE).communicate()[0].strip().split(': ')[1].split(';')[0]
+                    "/usr/bin/file", "--mime-type", path],
+                    stdout=subprocess.PIPE).communicate()[0].split(": ")[-1].rstrip()
         except ValueError:
             print(path)
 
@@ -132,9 +132,9 @@ class Song(AudioUtil):
                 except HeaderNotFoundError, e:
                     log.error("File %s corrupt: %s" % (path, e))
                     self.corrupt = True
-        elif self.mimetype in ["video/mp4", "video/x-matroska"]:
-            # Allow videos to be enqueued, from which we will extract a
-            # wav and transcode to mp3 on the fly...
+        elif self.mimetype[0:5] == "video":
+            # Allow videos to be enqueued, from which we will (attempt)
+            # to extract a wav and transcode to mp3 on the fly...
             self.tracknumber = self.length = 100000
             self.artist = self.album = self.title = os.path.basename(self.path)
         else:
