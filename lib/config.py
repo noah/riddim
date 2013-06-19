@@ -35,4 +35,4 @@ class Config(object):
         icy_url         = config.get('icy', 'url')
         icy_pub         = config.getboolean('icy', 'pub')
         icy_metaint     = config.getint('icy', 'metaint')
-        content_type = config.get('icy', 'content_type')
+        content_type    = config.get('icy', 'content_type')
