@@ -20,8 +20,6 @@ class Config(object):
         runpath         = join_path('/tmp')
         datapath        = join_path(basepath, 'data', config.get('riddim', 'datafile'))
         hostname        = socket.gethostname()
-        port            = None # set in lib/args.py
-        pidpath         = join_path(runpath, "%s.%s" % (config.get('riddim', 'pidfile'), port))
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
         lame_args       = config.get('riddim', 'lame_args')
@@ -36,3 +34,9 @@ class Config(object):
         icy_pub         = config.getboolean('icy', 'pub')
         icy_metaint     = config.getint('icy', 'metaint')
         content_type    = config.get('icy', 'content_type')
+
+
+
+        @classmethod
+        def pidpath(cfg, port):
+            return join_path(cfg.runpath, "%s.%s" % (cfg.config.get('riddim', 'pidfile'), port))

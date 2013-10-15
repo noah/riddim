@@ -1,9 +1,7 @@
 import sys
 from argparse import ArgumentParser
-
+# from lib.logger import log
 from lib.config import Config
-
-from lib.logger import log
 
 
 class Args(object):

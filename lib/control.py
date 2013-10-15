@@ -14,17 +14,18 @@ from lib.data import set_data
 class Control(object):
 
     def __init__(self, port):
-        self.port = port
+        self.port    = port
+        self.pidpath = Config.pidpath( port )
 
     def read_pid(self):
         try:
-            with open(Config.pidpath, 'r') as f:
+            with open(self.pidpath, 'r') as f:
                 return int( f.read().strip() )
         except:
             return False
 
     def write_pid(self, pid):
-        with open(Config.pidpath, 'w') as f:
+        with open(self.pidpath, 'w') as f:
             f.write( str(pid) )
 
     def start(self):
