@@ -4,3 +4,4 @@ audio
 *.pyc
 data
 scrobbler.cfg
+secret
