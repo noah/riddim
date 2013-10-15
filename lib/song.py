@@ -160,7 +160,7 @@ class Song(AudioUtil):
 
     def _tags(self):
         _tags = [self.artist, self.album, self.title]
-        if None in _tags: _tags = [self.path, "", ""]
+        if None in _tags or u'' in _tags: _tags = [self.path, "", ""]
         return _tags
 
     def _start(self):
