@@ -6,6 +6,8 @@ import math
 import fnmatch
 import random
 import cPickle as pickle
+from multiprocessing.pool import ThreadPool
+from multiprocessing import Queue
 from datetime import datetime
 
 from lib.config     import Config
@@ -71,10 +73,17 @@ class PlaylistFile(object):
             log.exception(e)
         return False
 
+def enqueuer(path):
+    enqueuer.q.put(Song(path))
+
+def enqueuer_init(q):
+    enqueuer.q = q
+
 
 class Playlist(object):
 
     def __init__(self, port):
+
 
         # get data from manager (see lib/server.py)
         DataManager.register('get_data')
@@ -176,14 +185,16 @@ class Playlist(object):
     def enqueue(self, paths):
         tracks = streams = 0
         pl = self.data['playlist']
+        # parallellize slow metadata reading
+        q    = Queue()
+        pool = ThreadPool(Config.pool_size, enqueuer_init, [q])
         for path in paths:
             log.info("adding %s" % path)
 
             eL = relay = None
 
             # enqueue a single file argument
-            if os.path.isfile(path):
-                eL = [os.path.realpath(path)]
+            if os.path.isfile(path): eL = [os.path.realpath(path)]
             # enqueue a relay stream object
             elif self.is_stream_url(path):
                 relay   # TODO
@@ -198,14 +209,14 @@ class Playlist(object):
                 if track_count == 0:    last = 0
                 else:                   last = sorted(pl.keys())[-1] + 1
 
+                pool.map(enqueuer, eL)
+                #
                 for i in range(len(eL)):
-                    song = Song(eL[i])
+                    song = q.get()
                     if song.corrupt: continue
                     pl[i + last] = song
-                    print ". ",
-                    sys.stdout.flush()
-                print
                 tracks += int(len(pl)) - track_count
+        pool.close()
 
         try:
             self.data['playlist'] = pl

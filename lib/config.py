@@ -23,6 +23,7 @@ class Config(object):
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
         lame_args       = config.get('riddim', 'lame_args')
+        pool_size       = config.getint('riddim', 'pool_size')
         #
         metaint         = config.getint('icy', 'metaint')
         buffer_size     = config.getint('icy', 'buffer_size')
