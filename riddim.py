@@ -37,7 +37,14 @@ if __name__ == "__main__":
                         "index"         : playlist.index,
                         "enqueue"       : playlist.enqueue
                     }[ action ]( arg )
-                except: pass
+                except KeyError:
+                    pass
+                except Exception, e:
+                    #import traceback
+                    #traceback.print_exc()
+                    #print 'e', e
+                    #sys.stderr.write( str(e) )
+                    pass
 
     try:        sys.stdout.close()
     except:     pass
