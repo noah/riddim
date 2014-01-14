@@ -1,19 +1,20 @@
+from os import walk
+from os.path import isfile, realpath, join, isdir
 import re
-import os
 import sys
 import time
 import math
 import fnmatch
 import random
 import cPickle as pickle
-from multiprocessing.pool import ThreadPool
-from multiprocessing import Queue
+from multiprocessing import Pool
 from datetime import datetime
 
 from lib.config     import Config
 from lib.logger     import log
 from lib.song       import Song
 from lib.data       import DataManager
+from lib.util       import is_stream
 
 label_bool      = {True: 'on', False: 'off'}
 label_status    = {"stopped" : ".", "playing" : ">"}
@@ -73,12 +74,11 @@ class PlaylistFile(object):
             log.exception(e)
         return False
 
-def enqueuer(path):
-    enqueuer.q.put(Song(path))
 
-def enqueuer_init(q):
-    enqueuer.q = q
-
+def crunch(path):
+    log.info( path )
+    return Song(path)
+pool = Pool()
 
 class Playlist(object):
 
@@ -168,55 +168,43 @@ class Playlist(object):
 
     def files_by_pattern(self, path, pattern):
         results = []
-        for base, dirs, files in os.walk(path):
+        for base, dirs, files in walk(path):
             matches = fnmatch.filter(files, pattern)
-            results.extend(os.path.realpath(os.path.join(base, m)) for m
-                    in matches)
+            results.extend( realpath( join(base, m) ) for m in matches )
         return results
-
-    def is_stream_url(self, arg):
-        #from urlparse import urlparse
-        return False
 
     def enqueue_list(self, path):
         return self.files_by_pattern(path, '*.[mM][pP]3') + \
                self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
-    def enqueue(self, paths):
-        tracks = streams = 0
-        pl = self.data['playlist']
-        # parallellize slow metadata reading
-        q    = Queue()
-        pool = ThreadPool(Config.pool_size, enqueuer_init, [q])
-        for path in paths:
-            log.info("adding %s" % path)
+    def enqueue(self, args):
+        tracks  = streams = 0
+        pl      = self.data['playlist']
 
-            eL = relay = None
+        for arg in args:
 
-            # enqueue a single file argument
-            if os.path.isfile(path): eL = [os.path.realpath(path)]
-            # enqueue a relay stream object
-            elif self.is_stream_url(path):
-                relay   # TODO
-                pass
-            # enqueue a directory (glob)
+            elist = relay = None
+
+            if isfile( arg ):
+                elist = [ realpath( arg ) ]
+            elif is_stream( arg ):
+                raise NotImplementedError # TODO
             else:
-                eL = self.enqueue_list(path)
-                eL.sort()
+                assert isdir( arg )
+                elist = self.enqueue_list( arg )
+                elist.sort()
 
-            if eL is not None:
+            if elist is not None:
                 track_count = int(len(pl))
                 if track_count == 0:    last = 0
                 else:                   last = sorted(pl.keys())[-1] + 1
 
-                pool.map(enqueuer, eL)
-                #
-                for i in range(len(eL)):
-                    song = q.get()
+                songs = pool.map(crunch, elist)
+
+                for i, song in enumerate( songs ):
                     if song.corrupt: continue
                     pl[i + last] = song
                 tracks += int(len(pl)) - track_count
-        pool.close()
 
         try:
             self.data['playlist'] = pl
@@ -227,7 +215,8 @@ class Playlist(object):
         if self.data['status'] == 'stopped' and int(self.data['index']) == - 1:
             self.data['index'] = 0
 
-        return "Enqueued %s tracks in %s directories (%s streams)." % (tracks, len(paths), streams)
+        return "Enqueued %s tracks in %s directories (%s streams)." % (tracks,
+                                                                       len(args), streams)
 
     def remove(self):
         index = int(self.data['index'])
