@@ -1,6 +1,5 @@
 import time
 import errno
-import shlex
 import subprocess
 import Queue
 
@@ -57,7 +56,6 @@ class Streamer(object):
                 self.scrobble_queue.queue.clear()
 
     def stream(self, icy_client=False):
-        f = None
         song = None
         while self.playlist.data['running']:
             if Config.scrobble and song:
@@ -84,71 +82,32 @@ class Streamer(object):
 
             log.info(u'> %s' % unicode(song))
 
-            transcode_pipe = mp3_pipe = None
+            transcode = None
             try:
-                # sorry code gods
-                transcode= False
-
                 # this loop gets some of its ideas about the shoutcast protocol from Amarok
                 buffer              = 0
                 buffer_size         = Config.buffer_size
                 metadata_interval   = Config.metaint
 
                 try:
-                    f.close()
+                    transcode.stdout.close()
                 except:
                     pass
 
-                if song.mimetype == "audio/x-flac":
-                    transcode_pipe = subprocess.Popen([
-                            "/usr/bin/flac", "--silent", "-d",
-                            song.path,
-                            "--stdout"],
-                            stdout=subprocess.PIPE,
-                            shell=False)
-                    mp3_pipe = subprocess.Popen(
-                            (["/usr/bin/lame"]
-                            + shlex.split(Config.lame_args)
-                            + ["-", "-"]),
-                            stdout=subprocess.PIPE,
-                            shell=False,
-                            stdin=transcode_pipe.stdout)
-                    f = mp3_pipe.stdout
-                    transcode = True
-                elif song.mimetype[0:5] == "video":
-                    transcode_pipe = subprocess.Popen([
-                            "/usr/bin/ffmpeg",
-                            "-loglevel", "quiet",
-                            "-i", song.path,
-                            "-vn", "-f", "wav", "pipe:1"],
-                            stdout=subprocess.PIPE,
-                            shell=False)
-                    mp3_pipe = subprocess.Popen(
-                            (["/usr/bin/lame"]
-                            + shlex.split(Config.lame_args)
-                            + ["-", "-"]),
-                            stdout=subprocess.PIPE,
-                            shell=False,
-                            stdin=transcode_pipe.stdout)
-                    f = mp3_pipe.stdout
-                    transcode = True
-                else:  # assume mp3
-                    try:
-                        f = file(song.path, 'r')
-                        f.seek(song.start)
-                    except IOError:
-                        #import pprint
-                        # file deleted?
-                        log.warn("removing %s.  file deleted?" % song.path)
-                        self.playlist.remove()
-                        self.empty_scrobble_queue()
-                        song = None
-                        continue
-
+                if song.mimetype[0:5] in ["audio", "video"]:
+                    transcode = subprocess.Popen(["/usr/bin/ffmpeg",
+                                    "-i", song.path,
+                                    "-vn",
+                                    "-loglevel", "warning",
+                                    "-qscale:a", "0",
+                                    "-f", "mp3",
+                                    "-"],
+                                    stdout=subprocess.PIPE,
+                                    shell=False)
                 self.dirty_meta = True
 
                 skip = False
-                while self.playlist.data['running'] and (transcode or (f.tell() < song.size)):
+                while self.playlist.data['running'] and transcode:
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
@@ -160,7 +119,7 @@ class Streamer(object):
                             chunk_bytes = bytes_until_meta
                         else:
                             chunk_bytes = buffer_size
-                        buffer = f.read(chunk_bytes)
+                        buffer = transcode.stdout.read(chunk_bytes)
 
                         self.request.send(buffer)
                         buflen = len(buffer)
@@ -209,11 +168,10 @@ class Streamer(object):
             except KeyboardInterrupt:
                 self.playlist.data['running']   = False
             finally:
-                for pipe in [mp3_pipe, transcode_pipe]:
-                    if pipe is not None:
-                        try:
-                            pipe.kill()
-                            pipe.wait()
-                        except OSError:
-                            # can't kill dead proc
-                            pass
+                if transcode is not None:
+                    try:
+                        transcode.kill()
+                        transcode.wait()
+                    except OSError:
+                        # can't kill dead proc
+                        pass
