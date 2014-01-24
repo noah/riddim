@@ -23,7 +23,9 @@ if __name__ == "__main__":
 
     else:
         playlist = Playlist(args.port)
-        if   args.query                 : print playlist.query()
+        if   args.query                 :
+            try:            print playlist.query()
+            except IOError: pass # don't puke if quitting less(1)
         elif args.shuffle               : print playlist.shuffle()
         elif args.repeat                : print playlist.repeat()
         elif args.kontinue              : print playlist.kontinue()
