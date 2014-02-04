@@ -1,4 +1,4 @@
-## Introduction 
+## Wut?
 
 **riddim** is a digital jukebox server written in python2 with the
 following features:
