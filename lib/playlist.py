@@ -166,16 +166,11 @@ class Playlist(object):
 
         return song
 
-    def files_by_pattern(self, path, pattern):
+    def enqueue_list(self, path):
         results = []
         for base, dirs, files in walk(path):
-            matches = fnmatch.filter(files, pattern)
-            results.extend( realpath( join(base, m) ) for m in matches )
+            results.extend( realpath( join(base, f) ) for f in files )
         return results
-
-    def enqueue_list(self, path):
-        return self.files_by_pattern(path, '*.[mM][pP]3') + \
-               self.files_by_pattern(path, '*.[fF][lL][aA][cC]')
 
     def enqueue(self, args):
         tracks  = streams = 0
