@@ -11,19 +11,31 @@ following features:
 
 ## Installation and mini-tutorial
 
+In a first shell on the server computer:
+
 ```
 # pip2 install mutagen scrobbler
 % git clone https://github.com/noah/riddim.git
 % cd riddim
 % $EDITOR riddim.cfg
 % ./riddim -k start
+```
+
+In a second shell on the server computer:
+
+```
 % ./riddim -e /path/to/some/music
+```
+
+On the client
+```
 % vlc -I curses http://localhost:18944
 ```
+
 Music should now be coming out of your speakers.
 
-Once you have started the server, as above, you can manipulate the
-playlist:
+Once the server is started, the playlist can be manipulated without
+shutting down:
 
 ```bash
 % riddim -e Siamese\ Dream                      # add a directory of tracks to the playlist ...
@@ -34,16 +46,16 @@ playlist:
 % riddim -h                                     # show help
 % aliased to riddim -q | less --pattern="^\*"   # show playlist at current track 
 ```
-N.B.: The length of time it takes before changes to the playlist will be
-reflected to a client listener is determined by the variable `buffer_size`
+
+However, changes to the playlist will take some time to propogate to a
+client listener - this value is determined by the variable `buffer_size`
 in `riddim.cfg`.
 
 
 ## Audioscrobbler
 
-If you want to scrobble tracks, you will need to set `scrobble=True` in
-`riddim.cfg` and also create a `scrobbler.cfg` file with the following
-contents:
+To scrobble tracks, `scrobble=True` must be set in `riddim.cfg` and a
+`scrobbler.cfg` file in the following format is required:
 
     [scrobbler]
     username='Your Username'
@@ -53,22 +65,21 @@ contents:
 
 **riddim** works well in combination with Apache or another web server.
 The following configuration enables streaming from a `VirtualHost` (so
-you can have a pretty url like `http://stream.your.tld`).  I use
+one can have a pretty url like `http://stream.some.tld`).  I use
 something like this:
 
 ```
 <VirtualHost *:80>
-   ServerName stream.your.tld
-   ServerAdmin you@your.tld
+   ServerName stream.my.tld
+   ServerAdmin me@my.tld
    ProxyPass / http://192.168.1.2:18944
 </VirtualHost>      
 ```
 
 Of course, **riddim** will need to be running on host
-`192.168.1.2:18944` for that to work, but if you set it up correctly you
-can point your music streamer at `http://stream.your.tld` and listen to
-the music that way (cough ... thus defeating corporate firewalls ...
-cough).
+`192.168.1.2:18944` for that to work, but if it is set up correctly you
+can open `http://stream.your.tld` from any music client to listen that
+way (cough ... thus defeating corporate firewalls ...  cough).
 
 ## Contributors
 
