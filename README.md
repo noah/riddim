@@ -1,4 +1,9 @@
-## Wut?
+## Screenshots
+
+![riddim server](screenshots/riddim.png "riddim server output")
+![riddim -q](screenshots/riddim-q.png "output of riddim -q query command")
+
+## What is it
 
 **riddim** is a digital jukebox server written in python2 with the
 following features:
