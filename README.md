@@ -1,8 +1,3 @@
-## Screenshots
-
-![riddim server](screenshots/riddim.png "riddim server output")
-![riddim -q](screenshots/riddim-q.png "output of riddim -q query command")
-
 ## What is it
 
 **riddim** is a digital jukebox server written in python2 with the
@@ -55,6 +50,14 @@ shutting down:
 However, changes to the playlist will take some time to propogate to a
 client listener - this value is determined by the variable `buffer_size`
 in `riddim.cfg`.
+
+## Screenshots
+
+server output
+![riddim server](screenshots/riddim.png "riddim server output")
+
+query command
+![riddim -q](screenshots/riddim-q.png "output of riddim -q query command")
 
 
 ## Audioscrobbler
