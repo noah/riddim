@@ -5,9 +5,7 @@ import sys
 import subprocess
 
 try:
-    # easyid3 maps the real id3 standard tag names to the same as the flac ones
-    from mutagen.mp3 import MP3, HeaderNotFoundError
-    from mutagen.flac import FLAC
+    from mutagen import File as MutagenFile
 except:
     print """
     You need mutagen
@@ -90,17 +88,13 @@ def _mp3get(_mp3, key, default):
     except: return default
 
 
-# FIXME
-def _flacget(_flac, key, default):
-    try:    return unicode(_flac[key][0])
-    except: return default
-
-
 class Song(AudioUtil):
 
     def __init__(self, path):
         self.path       = path
         self.corrupt    = False
+        self.bitrate    = self.length = 0
+        self.title      = self.artist = self.album = ''
         try:
             self.mimetype = subprocess.Popen([
                     "/usr/bin/file", "--mime-type", path],
@@ -108,35 +102,28 @@ class Song(AudioUtil):
         except ValueError:
             print(path)
 
-        if self.mimetype == 'audio/x-flac':
-            _flac = FLAC(path)
-            try:    self.tracknumber = int(_flacget(_flac, "tracknumber", 0))
-            except: self.tracknumber = 0
-            self.artist = _flacget(_flac, "artist", "")
-            self.album  = _flacget(_flac, "album", "")
-            self.title  = _flacget(_flac, "title", "")
-            self.length = int(_flac.info.length)
-            #"bitrate"           : _flac.info.bitrate,
-        elif self.mimetype in ['audio/mpeg', 'application/octet-stream']:
-                # Handle it anyway --  sometimes mp3 will have content-type
-                # application/octet-stream, but this is ok.
-                try:
-                    _mp3 = MP3(path)
-                    try:    self.tracknumber = int( _mp3get(_mp3, "TRCK", 0) )
-                    except: self.tracknumber = 0
-                    self.artist     = _mp3get(_mp3, "TPE1", "")
-                    self.album      = _mp3get(_mp3, "TALB", "")
-                    self.title      = _mp3get(_mp3, "TIT2", "")
-                    self.length     = int(_mp3.info.length)
-                    self.bitrate    = int(_mp3.info.bitrate)
-                except HeaderNotFoundError, e:
-                    log.error("File %s corrupt: %s" % (path, e))
-                    self.corrupt = True
-        elif self.mimetype[0:5] == "video":
+        av = self.mimetype[0:5] # enqueue any audio file
+        if av == "audio":
+            audio = MutagenFile( path, easy=True )
+            try:    self.bitrate        = int(audio.info.bitrate)
+            except: pass
+
+            try:    self.length         = int(audio.info.length)
+            except: pass
+
+            try:
+                self.artist         = unicode( audio.get('artist', [''])[0] )
+                self.album          = unicode( audio.get('album', [''])[0] )
+                self.title          = unicode( audio.get('title', [''])[0] )
+                self.tracknumber    = int( audio.get('tracknumber', [0])[0].split("/")[0] )
+                # split in above b/c sometimes encoders will list track numbers as "i/n"
+            except Exception, e:
+                print e, audio, audio.info.bitrate
+        elif av == "video":
             # Allow videos to be enqueued, from which we will (attempt)
             # to extract a wav and transcode to mp3 on the fly...
             self.tracknumber = self.length = 100000
-            self.artist = self.album = self.title = os.path.basename(self.path)
+            self.artist      = self.album = self.title = os.path.basename(self.path)
         else:
             log.warn("Mimetype %s unsupported %s" %
                     (self.mimetype, self.path))
