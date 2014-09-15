@@ -19,7 +19,8 @@ class Config(object):
         # set up some config stuff that we will need
         runpath         = join_path('/tmp')
         datapath        = join_path(basepath, 'data', config.get('riddim', 'datafile'))
-        hostname        = socket.gethostname()
+        #hostname        = socket.gethostname()
+        hostname        = "0.0.0.0"
         scrobble        = config.getboolean('riddim', 'scrobble')
         url             = config.get('riddim', 'url')
         lame_args       = config.get('riddim', 'lame_args')
