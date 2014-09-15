@@ -94,16 +94,16 @@ class Streamer(object):
                 except:
                     pass
 
-                if song.mimetype[0:5] in ["audio", "video"]:
-                    transcode = subprocess.Popen(["/usr/bin/ffmpeg",
-                                    "-i", song.path,
-                                    "-vn",
-                                    "-loglevel", "warning",
-                                    "-qscale:a", "0",
-                                    "-f", "mp3",
-                                    "-"],
-                                    stdout=subprocess.PIPE,
-                                    shell=False)
+                #cif song.mimetype[0:5] in ["audio", "video"]:
+                transcode = subprocess.Popen(["/usr/bin/ffmpeg",
+                                              "-i", song.path,
+                                              "-vn",
+                                              "-loglevel", "warning",
+                                              "-qscale:a", "0",
+                                              "-f", "mp3",
+                                              "-"],
+                                             stdout=subprocess.PIPE,
+                                             shell=False)
                 self.dirty_meta = True
 
                 skip = False

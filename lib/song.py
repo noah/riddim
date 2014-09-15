@@ -92,6 +92,7 @@ class Song(AudioUtil):
 
     def __init__(self, path):
         self.path       = path
+        self.ext        = os.path.splitext(path)[1].lower()
         self.corrupt    = False
         self.bitrate    = self.length = 0
         self.title      = self.artist = self.album = ''
@@ -102,8 +103,11 @@ class Song(AudioUtil):
         except ValueError:
             print(path)
 
-        av = self.mimetype[0:5] # enqueue any audio file
-        if av == "audio":
+        av          = self.mimetype[0:5]
+        maybeaudio  = (self.mimetype == 'application/octet-stream') and (self.ext in ['.mp3','.flac','.m4a'])
+
+        # enqueue any audio file, or file that looks like an audio file
+        if (av == "audio") or maybeaudio:
             audio = MutagenFile( path, easy=True )
             try:    self.bitrate        = int(audio.info.bitrate)
             except: pass
@@ -116,6 +120,7 @@ class Song(AudioUtil):
                 self.album          = unicode( audio.get('album', [''])[0] )
                 self.title          = unicode( audio.get('title', [''])[0] )
                 self.tracknumber    = int( audio.get('tracknumber', [0])[0].split("/")[0] )
+                print self.artist, self.album, self.title, self.tracknumber
                 # split in above b/c sometimes encoders will list track numbers as "i/n"
             except Exception, e:
                 print e, audio, audio.info.bitrate
