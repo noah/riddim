@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 from os import walk
 from os.path import isfile, realpath, join, isdir
 import re
 import sys
 import time
 import math
-import fnmatch
+import codecs
 import random
 import cPickle as pickle
 from multiprocessing import Pool
@@ -16,8 +18,8 @@ from lib.song       import Song
 from lib.data       import DataManager
 from lib.util       import is_stream
 
-label_bool      = {True: 'on', False: 'off'}
-label_status    = {"stopped" : ".", "playing" : ">"}
+label_bool      = {True: u'on', False: u'off'}
+label_status    = {u"stopped" : u".", u"playing" : u">"}
 
 
 def filesizeformat(bytes):
@@ -27,16 +29,16 @@ def filesizeformat(bytes):
     """
     try:    bytes = float(bytes)
     except (TypeError, ValueError, UnicodeDecodeError):
-        return "%s bytes" % 0
+        return u"%s bytes" % 0
 
     pretty = lambda x: round(x, 1)
 
-    if bytes < 1024: return "%s bytes" % pretty(bytes)
-    if bytes < 1024 * 1024: return "%s KB" % pretty((bytes / 1024))
-    if bytes < 1024 * 1024 * 1024: return "%s MB" % pretty((bytes / (1024 * 1024)))
-    if bytes < 1024 * 1024 * 1024 * 1024: return "%s GB" % pretty((bytes / (1024 * 1024 * 1024)))
-    if bytes < 1024 * 1024 * 1024 * 1024 * 1024: return "%s TB" % pretty((bytes / (1024 * 1024 * 1024 * 1024)))
-    return "%s PB" % pretty((bytes / (1024 * 1024 * 1024 * 1024 * 1024)))
+    if bytes < 1024: return u"%s bytes" % pretty(bytes)
+    if bytes < 1024 * 1024: return u"%s KB" % pretty((bytes / 1024))
+    if bytes < 1024 * 1024 * 1024: return u"%s MB" % pretty((bytes / (1024 * 1024)))
+    if bytes < 1024 * 1024 * 1024 * 1024: return u"%s GB" % pretty((bytes / (1024 * 1024 * 1024)))
+    if bytes < 1024 * 1024 * 1024 * 1024 * 1024: return u"%s TB" % pretty((bytes / (1024 * 1024 * 1024 * 1024)))
+    return u"%s PB" % pretty((bytes / (1024 * 1024 * 1024 * 1024 * 1024)))
 
 
 class PlaylistFile(object):
@@ -45,7 +47,7 @@ class PlaylistFile(object):
     def read():
         try:
             # Read an existing file
-            with open( Config.datapath, 'rb' ) as picklef:
+            with codecs.open( Config.datapath, u'rb' ) as picklef:
                 data = pickle.load( picklef )
                 assert type(data) == dict
         except:
@@ -58,7 +60,7 @@ class PlaylistFile(object):
     @staticmethod
     def truncate():
         try:
-            open(Config.datapath, 'wb')
+            codecs.open(Config.datapath, u'wb')
             return True
         except Exception, e:
             log.exception(e)
@@ -67,7 +69,7 @@ class PlaylistFile(object):
     @staticmethod
     def save(data):
         try:
-            with open( Config.datapath, 'wb') as picklef:
+            with codecs.open( Config.datapath, u'wb') as picklef:
                 pickle.dump(data, picklef)
             return True
         except Exception, e:
@@ -76,8 +78,8 @@ class PlaylistFile(object):
 
 
 def crunch(path):
-    log.info( path )
     return Song(path)
+
 pool = Pool()
 
 class Playlist(object):
@@ -103,17 +105,17 @@ class Playlist(object):
 
         # set default playlist data
         default_data = {
-                'playlist'      : playlist_data,
-                'continue'      : False,
-                'repeat'        : False,
-                'shuffle'       : False,
-                'status'        : 'stopped',
-                'index'         : 0,
-                'song'          : None,
-                'skip'          : False,
-                'sum_bytes'     : 0,
-                'progress'      : 0,
-                'elapsed'       : 0,
+                u'playlist'      : playlist_data,
+                u'continue'      : False,
+                u'repeat'        : False,
+                u'shuffle'       : False,
+                u'status'        : u'stopped',
+                u'index'         : 0,
+                u'song'          : None,
+                u'skip'          : False,
+                u'sum_bytes'     : 0,
+                u'progress'      : 0,
+                u'elapsed'       : 0,
         }
         for k, v in default_data.items():
             try:
@@ -123,8 +125,8 @@ class Playlist(object):
                 self.data[k] = default_data[k]
 
     def __str__(self):
-        index   = self.data['index']
-        pl      = self.data['playlist']
+        index   = self.data[u'index']
+        pl      = self.data[u'playlist']
         new_pl  = []
         pl_len  = len(pl)
         if pl_len > 0:
@@ -132,21 +134,24 @@ class Playlist(object):
         else:
             pl_len = 0
         for i, song in pl.iteritems():
-            try:
-                pre = post = " "
-                if int(i) == index:
-                    pre     = "*" * len(pre)
-                    post    = " "
-                new_pl.append(' '.join([
-                    pre,
-                    '%*d' % (pad_digits, i + 1),
-                    "[", song.mimetype, "]",
-                    unicode(song),
-                    post
-                ]))
-            except:
-                log.exception(song)
-        return '\n'.join(new_pl)
+            #try:
+            pre = post = u" "
+            if int(i) == index:
+                pre     = u"*" * len(pre)
+                post    = u" "
+            probable_filetype = Config.audio_types[song.mimetype]
+            if probable_filetype == u'?':
+                probable_filetype = song.ext
+            new_pl.append(' '.join([
+                pre,
+                u'%*d' % (pad_digits, i + 1),
+                u"[", probable_filetype , u"]",
+                u"{}".format(song),
+                post
+            ]))
+            #except:
+            #    log.exception(song)
+        return u'\n'.join(new_pl)
 
     def __getattr__(self, key):
         return self.data[key]
@@ -156,13 +161,13 @@ class Playlist(object):
 
     def get_song(self):
         song    = None
-        index   = self.data['index']
+        index   = self.data[u'index']
         if index == -1: return None
         try:                song = self.song()
         except KeyError:    return None
 
-        self.data['status'] = 'playing'
-        self.data['song']   = song
+        self.data[u'status'] = u'playing'
+        self.data[u'song']   = song
 
         return song
 
@@ -174,11 +179,12 @@ class Playlist(object):
 
     def enqueue(self, args):
         tracks  = streams = 0
-        pl      = self.data['playlist']
+        pl      = self.data[u'playlist']
 
         for arg in args:
 
-            elist = relay = None
+            log.info(u"+ {}".format(arg.decode('utf-8')))
+            elist = None
 
             if isfile( arg ):
                 elist = [ realpath( arg ) ]
@@ -201,23 +207,23 @@ class Playlist(object):
                     pl[i + last] = song
                 tracks += int(len(pl)) - track_count
 
-        try:
-            self.data['playlist'] = pl
-        except Exception, e:
-            log.exception(e)
+        #try:
+        self.data[u'playlist'] = pl
+        #except Exception, e:
+        #    log.exception(e)
 
         # reached end of playlist, reset index
-        if self.data['status'] == 'stopped' and int(self.data['index']) == - 1:
-            self.data['index'] = 0
+        if self.data[u'status'] == u'stopped' and int(self.data[u'index']) == - 1:
+            self.data[u'index'] = 0
 
-        return "Enqueued %s tracks in %s directories (%s streams)." % (tracks,
+        return u"Enqueued %s tracks in %s directories (%s streams)." % (tracks,
                                                                        len(args), streams)
 
     def remove(self):
-        index = int(self.data['index'])
-        pl = self.data['playlist']
+        index = int(self.data[u'index'])
+        pl = self.data[u'playlist']
         del pl[index]
-        self.data['playlist'] = pl
+        self.data[u'playlist'] = pl
         self.next()
 
     # TODO clear() should call remove(); cli should call remove to strip
@@ -232,9 +238,9 @@ class Playlist(object):
             if regex:           # user passed in a regex
                 regex           = re.compile(regex, re.IGNORECASE)
                 data            = self.data
-                old_playlist    = data['playlist']
+                old_playlist    = data[u'playlist']
                 pl_keys         = sorted(old_playlist.keys())
-                old_index       = data['index']
+                old_index       = data[u'index']
                 new_playlist    = {}
 
                 i = 0
@@ -249,7 +255,7 @@ class Playlist(object):
                         i = i + 1
                     else:
                         removed.append(pl_key)
-                        print "x ",
+                        print u"x ",
                         sys.stdout.flush()
 
                 if len(removed) > 0:
@@ -260,29 +266,29 @@ class Playlist(object):
                     #   now-playing to the beginning of the playlist.
                     #
                     if old_index in removed:
-                        data['index'] = 0
-                        data['status'] = 'stopped'
-                        data['song'] = ''
-                        data['skip'] = True
+                        data[u'index'] = 0
+                        data[u'status'] = u'stopped'
+                        data[u'song'] = u''
+                        data[u'skip'] = True
                     else:
                     #
                     #   2) We removed n tracks coming before the index.
                     #   Shift now-playing index back n indices.
                     #   list or if we clobbered whatever it was pointing to in the
                     #   middle of the list.
-                        data['index'] = (old_index) - len([t for t in removed if t < old_index])
+                        data[u'index'] = (old_index) - len([t for t in removed if t < old_index])
                     #
                     #   3) We removed n tracks coming after the index.
                     #   No re-ordering necessary
 
-                data['playlist'] = new_playlist
+                data[u'playlist'] = new_playlist
                 self.data = data
 
             else:
                 # clear everything
-                self.data['playlist'] = {}
+                self.data[u'playlist'] = {}
 
-            return "%s tracks removed." % len(removed)
+            return u"%s tracks removed." % len(removed)
 
             # index           = self.data['index'] + 1
             # pl_len          = len(self.data['playlist'])
@@ -300,38 +306,39 @@ class Playlist(object):
             print(old_song is None)
 
     def query(self):
-        name            = "riddim"
+        name            = u"riddim"
         uptime          = self.uptime()
         status_symbol   = label_status[ self.status ]
         song            = self.get_song()
         #
         width           = 72
-        fill            = '='
-        blank           = '.'
+        fill            = u'='
+        blank           = u'.'
         step            = 100 / float(width)
         #
         q               = []
-        q.append("%s up %s sent %s total continue %s shuffle %s repeat %s index %s" % (name, uptime,
-            filesizeformat(self.data["sum_bytes"]),
-            self.data["continue"],
-            self.data["shuffle"],
-            self.data["repeat"],
-            self.data["index"]
+        q.append(u"{} up {} sent {} total continue {} shuffle {} repeat {} index {}".format(
+            name, uptime, filesizeformat(self.data["sum_bytes"]),
+            self.data[u"continue"],
+            self.data[u"shuffle"],
+            self.data[u"repeat"],
+            self.data[u"index"]
         ))
-        q.append("%s %s" % (status_symbol, song))
-        if self.status == "playing":
-            percentage      = int(self.data["progress"] / step)
-            fill            = percentage * '='
-            blank           = (width - percentage) * '.'
-            seconds_to_time = lambda x: time.strftime('%H:%M:%S', time.gmtime(x))
-            q.append("%s %s [%s>%s] %s%%" %
-                    (seconds_to_time(self.data["elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
-            q.append("%s" % (self))
-        return '\n'.join( q )
+        q.append(u"{} {}".format(status_symbol, song))
+        if self.status == u"playing":
+            percentage      = int(self.data[u"progress"] / step)
+            fill            = percentage * u'='
+            blank           = (width - percentage) * u'.'
+            seconds_to_time = lambda x: time.strftime(u'%H:%M:%S', time.gmtime(x))
+            q.append(u"{} {} [{}>{}] {}%".format(
+                    seconds_to_time(self.data[u"elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
+            q.append(u"{} ({})".format( self.data[u"progress"], song.length) )
+            q.append(u"{}".format(  self  ))
+        return u"\n".join( q )
 
     def index(self, index):
 
-        if index == "+1":  # corresponds to option -n with no argument
+        if index == u"+1":  # corresponds to option -n with no argument
             self.next()
         else:
             try:
@@ -339,35 +346,35 @@ class Playlist(object):
                 (first_index, last_index) = self.index_bounds()
                 if new_index > last_index:      new_index = last_index
                 elif new_index < first_index:   new_index = first_index
-                self.data['index'] = new_index
+                self.data[u'index'] = new_index
             except ValueError:
-                return "``%s'' is not an integer" % index
+                return u"``{}'' is not an integer".format(index)
 
-        if self.data['status'] == 'playing':
-            self.data['skip'] = True
+        if self.data[u'status'] == 'playing':
+            self.data[u'skip'] = True
 
-        return self.query()
+        return index
 
     def index_bounds(self):
-        sorted_indices = sorted(self.data['playlist'].keys())
+        sorted_indices = sorted(self.data[u'playlist'].keys())
         try:
             return (sorted_indices[0], sorted_indices[-1])
         except IndexError:
             return (0, 0)
 
     def uptime(self):
-        delta = datetime.now() - self.data['started_at']
+        delta = datetime.now() - self.data[u'started_at']
         hours, _ = divmod(delta.seconds, 3600)
         minutes, seconds = divmod(_, 60)
-        return "%sd %02dh %02dm %02ds" % \
+        return u"%sd %02dh %02dm %02ds" % \
                (delta.days, hours, minutes, seconds)
 
     def kontinue(self):
-        self.toggle('continue')
+        self.toggle(u'continue')
         return self.query()
 
     def song(self):
-        return self.data['playlist'][self.data['index']]
+        return self.data[u'playlist'][self.data[u'index']]
 
     def next_album(self):
         album_this = self.song().album
@@ -386,32 +393,32 @@ class Playlist(object):
         return self.query()
 
     def repeat(self):
-        self.toggle('repeat')
+        self.toggle(u'repeat')
         return self.query()
 
     def shuffle(self):
-        self.toggle('shuffle')
+        self.toggle(u'shuffle')
         return self.query()
 
     def next(self):
-        if self.data['shuffle']:
-            self.data['index'] = random.choice( self.data['playlist'].keys() )
-        elif self.data['repeat']:
+        if self.data[u'shuffle']:
+            self.data[u'index'] = random.choice( self.data[u'playlist'].keys() )
+        elif self.data[u'repeat']:
             pass
         else:
-            new_index = int(self.data['index'] + 1)
-            if not self.data['continue']:
+            new_index = int(self.data[u'index'] + 1)
+            if not self.data[u'continue']:
                 # prevent rollover
                 first_index, last_index = self.index_bounds()
                 if new_index > last_index:
-                    self.data['index'] = 0
+                    self.data[u'index'] = 0
                     return
-            self.data['index'] = new_index
+            self.data[u'index'] = new_index
 
     def toggle(self, key):
         self.data[key] = not(bool(self.data[key]))
 
     def save(self):
-        PlaylistFile.save( self.data['playlist'] )
+        PlaylistFile.save( self.data[u'playlist'] )
         # TODO
         #PlaylistFile.save( self.data )

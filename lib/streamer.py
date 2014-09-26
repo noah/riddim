@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 import errno
 import subprocess
@@ -31,12 +32,12 @@ class Streamer(object):
 
     def get_meta(self, song):
         # lifted from amarok
-        metadata    = "%cStreamTitle='%s';StreamUrl='%s';%s"
-        padding     = '\x00' * 16
+        metadata    = u"%cStreamTitle='%s';StreamUrl='%s';%s"
+        padding     = u'\x00' * 16
         meta        = None
         if self.dirty_meta:
             songs           = unicode(song)
-            stream_title    = songs.encode('ascii', 'ignore')
+            stream_title    = songs.encode(u'ascii', u'ignore')
             stream_url      = Config.url
 
             # 28 is the number of static characters in metadata (!)
@@ -46,7 +47,7 @@ class Streamer(object):
             meta            = metadata % (((length + pad) / 16), stream_title, stream_url, what)
             self.dirty_meta = False
         else:
-            meta = '\x00'
+            meta = u'\x00'
 
         return meta
 
@@ -57,7 +58,7 @@ class Streamer(object):
 
     def stream(self, icy_client=False):
         song = None
-        while self.playlist.data['running']:
+        while self.playlist.data[u'running']:
             if Config.scrobble and song:
                     # just played one . . . scrobble it
                     self.scrobble_queue.put(ScrobbleItem(PLAYED, song))
@@ -67,11 +68,11 @@ class Streamer(object):
             # new song
             song            = self.playlist.get_song()
             song_start_time = time.time()
-            self.playlist.data["progress"] = 0
+            self.playlist.data[u"progress"] = 0
 
             if not song:
-                log.warn("no playlist, won't stream")
-                self.playlist.data['status'] = 'stopped'
+                log.warn(u"no playlist, won't stream")
+                self.playlist.data[u'status'] = u'stopped'
                 self.byte_count = 0
                 self.empty_scrobble_queue()
                 return
@@ -95,24 +96,24 @@ class Streamer(object):
                     pass
 
                 #cif song.mimetype[0:5] in ["audio", "video"]:
-                transcode = subprocess.Popen(["/usr/bin/ffmpeg",
-                                              "-i", song.path,
-                                              "-vn",
-                                              "-loglevel", "warning",
-                                              "-qscale:a", "0",
-                                              "-f", "mp3",
-                                              "-"],
+                transcode = subprocess.Popen([u"/usr/bin/ffmpeg",
+                                              u"-i", song.path,
+                                              u"-vn",
+                                              u"-loglevel", u"warning",
+                                              u"-qscale:a", u"0",
+                                              u"-f", u"mp3",
+                                              u"-"],
                                              stdout=subprocess.PIPE,
                                              shell=False)
                 self.dirty_meta = True
 
                 skip = False
-                while self.playlist.data['running'] and transcode:
+                while self.playlist.data[u'running'] and transcode:
                     bytes_until_meta = (metadata_interval - self.byte_count)
                     if bytes_until_meta == 0:
                         if icy_client:
                             metadata = self.get_meta(song)
-                            self.request.send(metadata.encode('ascii', 'ignore'))
+                            self.request.send(metadata.encode(u'ascii', u'ignore'))
                         self.byte_count = 0
                     else:
                         if bytes_until_meta < buffer_size:
@@ -124,49 +125,49 @@ class Streamer(object):
                         self.request.send(buffer)
                         buflen = len(buffer)
                         self.byte_count                     += buflen
-                        self.playlist.data["sum_bytes"]     += buflen
+                        self.playlist.data[u"sum_bytes"]     += buflen
                         elapsed = time.time() - song_start_time
-                        self.playlist.data['elapsed'] = elapsed
+                        self.playlist.data[u'elapsed'] = elapsed
                         # set percentage elapsed
-                        self.playlist.data["progress"] = float(elapsed * 100) / song.length
+                        self.playlist.data[u"progress"] = float(elapsed * 100) / song.length
 
                         if len(buffer) == 0: break
 
-                    if self.playlist.data['skip']:
-                        log.info(">>")
+                    if self.playlist.data[u'skip']:
+                        log.info(u">>")
                         skip = True
                         song = None  # don't scrobble
-                        self.playlist.data["elapsed"] = 0
-                        self.playlist.data["progress"] = 0
+                        self.playlist.data[u"elapsed"] = 0
+                        self.playlist.data[u"progress"] = 0
                         break
 
-                    if self.playlist.data['status'] == 'stopped':
-                        log.info(".")
+                    if self.playlist.data[u'status'] == u'stopped':
+                        log.info(u".")
                         skip = True
                         song = None  # don't scrobble
-                        self.playlist.data["elapsed"] = 0
+                        self.playlist.data[u"elapsed"] = 0
                         break
 
                 if not skip:
                     # increment the counter if we're not ffwding
                     self.playlist.next()
                 else:
-                    self.playlist.data['skip'] = False
+                    self.playlist.data[u'skip'] = False
                 self.dirty_meta = True
             except IOError, e:
                 if e.errno == errno.EPIPE:
                     self.empty_scrobble_queue()
-                    log.info("Broken pipe.  Client disconnected.")
+                    log.info(u"Broken pipe.  Client disconnected.")
                 elif e.errno == errno.ECONNRESET:
                     self.empty_scrobble_queue()
-                    log.info("Client disconnected")
+                    log.info(u"Client disconnected")
                 else:
                     self.empty_scrobble_queue()
                     log.exception(errno.errorcode[e.errno])
-                self.playlist.data['status'] = 'stopped'
+                self.playlist.data[u'status'] = 'stopped'
                 break  # while
             except KeyboardInterrupt:
-                self.playlist.data['running']   = False
+                self.playlist.data[u'running']   = False
             finally:
                 if transcode is not None:
                     try:

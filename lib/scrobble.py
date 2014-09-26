@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import threading
 import time
 import os
@@ -11,7 +12,7 @@ import ConfigParser
 try:
     import scrobbler
 except ImportError:
-    print """Oops.  You need to run:\n\
+    print u"""Oops.  You need to run:\n\
     % pip install scrobbler"""
     sys.exit(-1)
 
@@ -44,16 +45,16 @@ class Scrobbler(threading.Thread):
 
     def login(self):
         config = ConfigParser.ConfigParser()
-        cwd = os.path.realpath(os.path.dirname(__file__) + '/..')
-        config.read(os.path.join(cwd, 'scrobbler.cfg'))
-        username = config.get('scrobbler', 'username')
-        password = hashlib.md5(config.get('scrobbler', 'password')).hexdigest()
+        cwd = os.path.realpath(os.path.dirname(__file__) + u'/..')
+        config.read(os.path.join(cwd, u'scrobbler.cfg'))
+        username = config.get(u'scrobbler', u'username')
+        password = hashlib.md5(config.get(u'scrobbler', u'password')).hexdigest()
         try:
             scrobbler.login(user=username, password=password)
         except scrobbler.ProtocolError:
             time.sleep(49)
         except Exception as e:
-            log.exception("Couldn't login: %s" % e)
+            log.exception(u"Couldn't login: %s" % e)
 
     def run(self):
         # well this is just fugly.  call it "experimental"
@@ -66,10 +67,10 @@ class Scrobbler(threading.Thread):
                     error = scrobble_item.error
                     etime = scrobble_item.etime
 
-                    (artist, album, track) = [escape(item) for item in song.tags]
+                    (tracknumber, artist, album, track) = [escape(item) for item in song.tags]
 
                     if type == NOW_PLAYING:
-                        log.debug("scrobbling now playing %s %s %s" %
+                        log.debug(u"scrobbling now playing %s %s %s" %
                                 (artist, track, album))
                         self.login()
                         scrobbler.now_playing(
@@ -81,26 +82,26 @@ class Scrobbler(threading.Thread):
                     elif type == PLAYED:
                         # See: http://exhuma.wicked.lu/projects/python/scrobbler/api/public/scrobbler-module.html#login
                         # if mimetype is wrong, length == 0
-                        if song.length < 30: log.warn("song length %s" % song.length)
+                        if song.length < 30: log.warn(u"song length %s" % song.length)
 
                         # wait 60 seconds before re-trying
                         # submission
                         if error:
                             if (time.time() - etime) < 60:
                                 break
-                        log.debug("scrobbling played %s %s %s %s" %
+                        log.debug(u"scrobbling played %s %s %s %s" %
                                 (artist, track, album, song.length))
                         self.login()
                         scrobbler.submit(
                             artist,
                             track,
                             int(time.mktime(datetime.datetime.now().timetuple())),
-                            source=escape('P'),
+                            source=escape(u'P'),
                             length=song.length,
                             album=album)
                         scrobbler.flush()
                 except Exception as e:
-                    log.exception("scrobble error: %s" % e)
+                    log.exception(u"scrobble error: %s" % e)
                     # put it back
                     scrobble_item.error = True
                     scrobble_item.etime = time.time()

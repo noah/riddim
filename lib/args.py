@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 from argparse import ArgumentParser
 # from lib.logger import log
@@ -11,62 +12,62 @@ class Args(object):
         parser      = ArgumentParser()
 
         # server controls a la apachectl
-        parser.add_mutually_exclusive_group().add_argument("-k", "--signal",
-                        help="signal stop/start/status",
-                        choices=["stop", "start", "restart"],
+        parser.add_mutually_exclusive_group().add_argument(u"-k", u"--signal",
+                        help=u"signal stop/start/status",
+                        choices=[u"stop", u"start", u"restart"],
                         default=False)
 
         # CLI options
         [parser.add_argument( *_, **__) for _, __ in [
-                [("-C", "--continue"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "toggle continue",
-                    "dest"      : "kontinue"  # avoid kw collision
+                [(u"-C", u"--continue"), {
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"toggle continue",
+                    u"dest"      : u"kontinue"  # avoid kw collision
                 }],
-                [("-N", "--next-album"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "skip forward to the next album",
+                [(u"-N", u"--next-album"), {
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"skip forward to the next album",
                 }],
                 [("-A", "--next-artist"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "skip forward to the next artist",
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"skip forward to the next artist",
                 }],
-                [("-c", "--clear"), {
-                    "help"      : "clear playlist of tracks matching REGEX",
-                    "metavar"   : "REGEX"
+                [(u"-c", u"--clear"), {
+                    u"help"      : u"clear playlist of tracks matching REGEX",
+                    u"metavar"   : u"REGEX"
                 }],
-                [("-e", "--enqueue"), {
-                    "metavar"   : "/PATH/TO/TRACKS",
-                    "help"      : "enqueue track(s)",
-                    "nargs"     : "+"
+                [(u"-e", u"--enqueue"), {
+                    u"metavar"   : u"/PATH/TO/TRACKS",
+                    u"help"      : u"enqueue track(s)",
+                    u"nargs"     : u"+"
                 }],
-                [( "-n", "--index"), {
-                    "help"      : "set now playing to index INDEX",
-                    "metavar"   : "INDEX",
-                    "const"     : "+1",
-                    "nargs"     : "?"
+                [( u"-n", u"--index"), {
+                    u"help"      : u"set now playing to index INDEX",
+                    u"metavar"   : u"INDEX",
+                    u"const"     : u"+1",
+                    u"nargs"     : u"?"
                 }],
-                [("-p", "--port"), {
-                    "type"      : int,
-                    "default"   : 18944 # (ridd)
+                [(u"-p", u"--port"), {
+                    u"type"      : int,
+                    u"default"   : 18944 # (ridd)
                 }],
-                [("-q", "--query"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "display server state"
+                [(u"-q", u"--query"), {
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"display server state"
                 }],
-                [("-r", "--repeat"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "Toggle song repeat"
+                [(u"-r", u"--repeat"), {
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"Toggle song repeat"
                 }],
-                [("-s", "--shuffle"), {
-                    "action"    : "store_true",
-                    "default"   : False,
-                    "help"      : "Toggle shuffle"
+                [(u"-s", u"--shuffle"), {
+                    u"action"    : u"store_true",
+                    u"default"   : False,
+                    u"help"      : u"Toggle shuffle"
                 }],
         ]]
 

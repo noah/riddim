@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime       import datetime
 from SocketServer   import TCPServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -20,10 +21,10 @@ class Server(HTTPServer):
 
         # set server defaults
         self.data = {
-                'started_at'    : datetime.now(),
-                'port'          : self.port,
-                'hostname'      : Config.hostname,
-                'running'       : True
+                u'started_at'    : datetime.now(),
+                u'port'          : self.port,
+                u'hostname'      : Config.hostname,
+                u'running'       : True
         }
 
         # create a shared Data object
@@ -45,18 +46,16 @@ class Server(HTTPServer):
         self.data = self.manager.get_data()
 
 
-        log.info("Bloops and bleeps at http://%s:%s" % self.server_address)
+        log.info(u"Bloops and bleeps at http://%s:%s" % self.server_address)
         self.serve_forever()
         self.cleanup()
 
     def serve_forever(self):
-        while self.data['running']:
-            print "handling requests"
+        while self.data[u'running']:
             self.handle_request()
-        print "done handling requests (server got message)"
 
     def cleanup(self):
-        log.debug("cleaning up")
+        log.debug(u"cleaning up")
         self.manager.shutdown()
         self.server_close()
         #sys.exit(1)
@@ -65,20 +64,20 @@ class Server(HTTPServer):
 class ServerRequestHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self, icy_client):
-        log.debug("head")
+        log.debug(u"head")
         #if icy_client:
-        self.send_response(200, "ICY")
+        self.send_response(200, u"ICY")
         # fixme verbose
         headers = {
-            'icy-notice1'   : Config.notice_1,
-            'icy-notice2'   : Config.notice_2,
-            'icy-name'      : Config.icy_name,
-            'icy-genre'     : Config.icy_genre,
-            'icy-url'       : Config.icy_url,
-            'icy-pub'       : Config.icy_pub,
+            u'icy-notice1'   : Config.notice_1,
+            u'icy-notice2'   : Config.notice_2,
+            u'icy-name'      : Config.icy_name,
+            u'icy-genre'     : Config.icy_genre,
+            u'icy-url'       : Config.icy_url,
+            u'icy-pub'       : Config.icy_pub,
             #'icy-br'        : 128,
-            'icy-metaint'   : Config.icy_metaint,
-            'content-type'  : Config.content_type
+            u'icy-metaint'   : Config.icy_metaint,
+            u'content-type'  : Config.content_type
         }
         [self.send_header(k, v) for k, v, in headers.iteritems()]
         self.end_headers()
@@ -87,14 +86,14 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         time.sleep(6000)
 
     def do_GET(self):
-        log.debug("post")
+        log.debug(u"post")
         # Handle well-behaved bots
         _path = self.path.strip()
-        log.info("Request path: %s" % _path)
-        if _path == "/robots.txt":
-            self.send("User-agent: *\nDisallow: /\n")
-        elif _path != "/":
-            self.send_error(403, "Bad request.\n")
+        log.info(u"Request path: %s" % _path)
+        if _path == u"/robots.txt":
+            self.send(u"User-agent: *\nDisallow: /\n")
+        elif _path != u"/":
+            self.send_error(403, u"Bad request.\n")
         else:
             # path is /
             #
@@ -134,19 +133,19 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
 
             H, icy_client = self.headers, False
             try:
-                icy_client = (int(H['icy-metadata']) == 1)
+                icy_client = (int(H[u'icy-metadata']) == 1)
             except KeyError, e:
-                log.error("non-icy client:  %s" % e)
+                log.error(u"non-icy client:  %s" % e)
                 log.error(self.address_string())
 
             if not icy_client:
-                self.send_response(400, "Bad client.\n Try http://cmus.sourceforge.net/\n")
+                self.send_response(400, u"Bad client.\n Try http://cmus.sourceforge.net/\n")
                 return False
 
             user_agent = None
-            try:                user_agent = H['user-agent']
-            except KeyError, e: log.exception("Couldn't get user agent.")
-            if user_agent:      log.info("User-Agent:  %s" % user_agent)
+            try:                user_agent = H[u'user-agent']
+            except KeyError, e: log.exception(u"Couldn't get user agent.")
+            if user_agent:      log.info(u"User-Agent:  %s" % user_agent)
 
             self.do_HEAD( icy_client )
             Streamer( self.request, self.server.port ).stream( icy_client )

@@ -2,12 +2,13 @@
 
 import os
 import sys
+import codecs
 import subprocess
 
 try:
     from mutagen import File as MutagenFile
 except:
-    print """
+    print u"""
     You need mutagen
         # pacman -S mutagen
         on archlinux
@@ -15,7 +16,8 @@ except:
     sys.exit(0)
 
 
-from logger import log
+from logger         import log
+from lib.config     import Config
 
 
 # todo make these static
@@ -59,7 +61,7 @@ class AudioUtil(object):
     # order.  Each byte can have its higher bits ignored by passing an sz arg.
     def bytes2bin(self, bytes, sz=8):
         if sz < 1 or sz > 8:
-            raise ValueError("Invalid sz value: " + str(sz))
+            raise ValueError(u"Invalid sz value: " + str(sz))
 
         retVal = []
         for b in bytes:
@@ -91,47 +93,84 @@ def _mp3get(_mp3, key, default):
 class Song(AudioUtil):
 
     def __init__(self, path):
-        self.path       = path
-        self.ext        = os.path.splitext(path)[1].lower()
-        self.corrupt    = False
-        self.bitrate    = self.length = 0
-        self.title      = self.artist = self.album = ''
         try:
-            self.mimetype = subprocess.Popen([
-                    "/usr/bin/file", "--mime-type", path],
-                    stdout=subprocess.PIPE).communicate()[0].split(": ")[-1].rstrip()
-        except ValueError:
-            print(path)
+            self.path       = path.decode('utf-8')
+        except UnicodeDecodeError, e:
+            latin1path      = path.decode('latin1')
+            # decoding file name into utf8 failed but latin1 worked.
+            # filename contains latin1-only characters (?)
+            # for example \xc2, \xa0
+            # encode path in in utf8
+            self.path       = latin1path.encode('utf-8').decode('utf-8')
+            log.info(u"bad chars, mv {} -> {}".format(latin1path, self.path))
+            import shutil
+            shutil.move(path, self.path) # yes, first arg should be `path'.
+            path = None # <- be sure not to use this again - it no longer exists.
 
-        av          = self.mimetype[0:5]
-        maybeaudio  = (self.mimetype == 'application/octet-stream') and (self.ext in ['.mp3','.flac','.m4a'])
+        self.ext            = os.path.splitext(self.path)[1].lower().strip('.')
+        self.corrupt        = False
+        self.bitrate        = self.length = 0
+        self.title          = self.artist = self.album = u''
+        self.tracknumber    = -1
+        self.mimetype       = subprocess.Popen([u"/usr/bin/file", u"--mime-type", self.path],
+                                         stdout=subprocess.PIPE).communicate()[0].split(": ")[-1].rstrip()
+        av                  = self.mimetype[0:5]
+        maybeaudio          = (self.mimetype == u'application/octet-stream') and (self.ext in Config.audio_types.values())
 
         # enqueue any audio file, or file that looks like an audio file
-        if (av == "audio") or maybeaudio:
-            audio = MutagenFile( path, easy=True )
-            try:    self.bitrate        = int(audio.info.bitrate)
-            except: pass
-
-            try:    self.length         = int(audio.info.length)
-            except: pass
-
+        if (av == u"audio") or maybeaudio:
+            audio = None
             try:
-                self.artist         = unicode( audio.get('artist', [''])[0] )
-                self.album          = unicode( audio.get('album', [''])[0] )
-                self.title          = unicode( audio.get('title', [''])[0] )
-                self.tracknumber    = int( audio.get('tracknumber', [0])[0].split("/")[0] )
-                print self.artist, self.album, self.title, self.tracknumber
-                # split in above b/c sometimes encoders will list track numbers as "i/n"
+                audio = MutagenFile( self.path, easy=True )
             except Exception, e:
-                print e, audio, audio.info.bitrate
-        elif av == "video":
+                # e.g.,
+                # "header size not synchsafe"
+                # mutagen.mp3.HeaderNotFoundError: can't sync to an MPEG frame
+                log.error(u"{} {}".format(e, self.path))
+                self.corrupt = True
+
+            if audio is None or self.corrupt:
+                log.error(u"Mutagen is None {}".format(self.path))
+            else:
+                if len(audio) < 1:
+                    # couldn't read metadata for some reason
+                    log.warn(u"mutagen failed {}".format(self.path))
+                else:
+                    try:    self.bitrate        = int(audio.info.bitrate)
+                    except: pass
+
+                    try:    self.length         = int(audio.info.length)
+                    except: pass
+
+                    try:
+                        self.artist         = audio.get(u'artist', [''])[0]
+                        self.album          = audio.get(u'album', [''])[0]
+                        self.title          = audio.get(u'title', [''])[0]
+                        if u'tracknumber' in audio:
+                            tn = audio.get(u'tracknumber')[0]
+                            # test for track number listed as i/n
+                            tn = tn.split(u"/")[0]
+                            # convert to a number
+                            try:
+                                self.tracknumber = int(tn, base=10)
+                            except ValueError:
+                                pass
+                                #  not a base10 integer.  hex?
+                                # try:
+                                #     self.tracknumber = int(tn, base=16)
+                                # except ValueError:
+                                #     pass # give up
+                    except Exception, e:
+                        log.debug(u"track data error %s %s %s %s", self.path, self.mimetype, e, audio)
+
+        elif av == u"video":
             # Allow videos to be enqueued, from which we will (attempt)
             # to extract a wav and transcode to mp3 on the fly...
             self.tracknumber = self.length = 100000
             self.artist      = self.album = self.title = os.path.basename(self.path)
         else:
-            log.warn("Mimetype %s unsupported %s" %
-                    (self.mimetype, self.path))
+            #log.warn(u"Mimetype {} unsupported {}".format(self.mimetype,
+            #                                           self.path))
             self.corrupt = True
 
         if not self.corrupt:
@@ -139,27 +178,31 @@ class Song(AudioUtil):
             self.start = self._start()
             self.tags  = filter(lambda x: x != '', self._tags())
 
-    def __str__(self):
-        if len(self.tags): return ' - '.join(self.tags)
+    def __unicode__(self):
+        if self.tags and len(self.tags): return u' - '.join(self.tags)
         return self.path
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __getattr__(self, attr):
-        log.debug("attribute lookup for %s" % attr)
+        log.debug(u"attribute lookup for %s" % attr)
         try:
             return self.__dict__[attr]
         except KeyError:
             return None
 
     def _tags(self):
-        _tags = [self.artist, self.album, self.title]
-        if None in _tags or u'' in _tags: _tags = [self.path, "", ""]
+        _tags = [unicode(self.tracknumber).zfill(2), self.artist, self.album, self.title]
+        if None in _tags[1:] or u'' in _tags: _tags = [self.path, u"", u""]
         return _tags
 
     def _start(self):
         # lifted from amarok
-        f = open(self.path, 'r')
+        f = codecs.open(self.path, u'r')
         id3 = f.read(3)
-        if not id3 == "ID3": return 0
+        if not id3 == "ID3": # (3 bytes, *not* unicode)
+            return 0
         f.seek(6)
         L = f.read(4)
         b2b = self.bytes2bin(L, 7)
@@ -173,3 +216,6 @@ class Song(AudioUtil):
     def __setstate__(self, d): self.__dict__.update(d)
 
     def __getnewargs__(self): return None,
+
+
+#song = Song(sys.argv[1])

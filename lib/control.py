@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import time
 import errno
 import socket
 import signal
+import codecs
 
 from lib.config import Config
 from lib.server import Server
@@ -19,19 +21,19 @@ class Control(object):
 
     def read_pid(self):
         try:
-            with open(self.pidpath, 'r') as f:
+            with codecs.open(self.pidpath, u'r') as f:
                 return int( f.read().strip() )
         except:
             return False
 
     def write_pid(self, pid):
-        with open(self.pidpath, 'w') as f:
-            f.write( str(pid) )
+        with codecs.open(self.pidpath, u'w') as f:
+            f.write( unicode(pid) )
 
     def start(self):
         pid = self.read_pid()
         if pid:
-            log.error("Server already running, pid %s." % pid)
+            log.error(u"Server already running, pid %s." % pid)
             sys.exit( -1 )
         else:
             self.write_pid( os.getpid() )
@@ -42,7 +44,7 @@ class Control(object):
             # will never reach this line
         except socket.error, se:
             if se.errno == errno.EACCES:
-                log.warn("Bad port: %s" % self.port)
+                log.warn(u"Bad port: %s" % self.port)
                 sys.exit( se.errno )
             else:
                 log.exception(se)
@@ -54,14 +56,14 @@ class Control(object):
         pid = self.read_pid()
         if pid:
             try:
-                set_data(self.port, 'running', False)
+                set_data(self.port, u'running', False)
                 #os.kill( pid, signal.SIGTERM)
             except OSError:  # already dead
                 pass
             except socket.error, se:
                 if se.errno == errno.ECONNREFUSED:
-                    log.warn("not running")
-            self.write_pid("")
+                    log.warn(u"not running")
+            self.write_pid(u"")
 
     def restart(self):
         self.stop()
