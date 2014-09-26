@@ -9,8 +9,8 @@ import math
 import codecs
 import random
 import cPickle as pickle
-from multiprocessing import Pool
 from datetime import datetime
+from socket import error as socket_error
 
 from lib.config     import Config
 from lib.logger     import log
@@ -80,20 +80,29 @@ class PlaylistFile(object):
 def crunch(path):
     return Song(path)
 
-pool = Pool()
-
 class Playlist(object):
 
-    def __init__(self, port):
+    def __init__(self, port, pool):
 
+        self.pool = pool
+        self.port = port
+        self.set_data()
 
-        # get data from manager (see lib/server.py)
-        DataManager.register('get_data')
+    def set_data(self):
+        try:
+            # get data from manager (see lib/server.py)
+            DataManager.register('get_data')
 
-        # manager port is one higher than listen port
-        manager = DataManager(address=(Config.hostname, port + 1),
-                authkey=Config.authkey)
-        manager.connect()
+            # manager port is one higher than listen port
+            manager = DataManager(address=(Config.hostname, self.port + 1),
+                    authkey=Config.authkey)
+            manager.connect()
+        except socket_error as serr:
+            import errno
+            if serr.errno != errno.ECONNREFUSED: raise serr
+            log.error("Connection refused.")
+            sys.exit()
+
         self.data = manager.get_data()
 
         playlist_data = None
@@ -200,7 +209,8 @@ class Playlist(object):
                 if track_count == 0:    last = 0
                 else:                   last = sorted(pl.keys())[-1] + 1
 
-                songs = pool.map(crunch, elist)
+
+                songs = self.pool.map(crunch, elist)
 
                 for i, song in enumerate( songs ):
                     if song.corrupt: continue

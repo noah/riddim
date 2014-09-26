@@ -14,7 +14,7 @@ class Streamer(object):
 
     def __init__(self, request, port):
 
-        self.playlist       = Playlist(port)
+        self.playlist       = Playlist(port, pool=None)
         self.request        = request
         self.byte_count     = 0
 

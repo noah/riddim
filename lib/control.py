@@ -4,7 +4,6 @@ import sys
 import time
 import errno
 import socket
-import signal
 import codecs
 
 from lib.config import Config
@@ -38,18 +37,26 @@ class Control(object):
         else:
             self.write_pid( os.getpid() )
 
+        server = None
         try:
             time.sleep(0.001)
-            Server((Config.hostname, self.port))
+            server = Server((Config.hostname, self.port))
+            log.info(u"Bloops and bleeps at http://%s:%s" % server.server_address)
+            server.serve_forever()
             # will never reach this line
         except socket.error, se:
             if se.errno == errno.EACCES:
                 log.warn(u"Bad port: %s" % self.port)
                 sys.exit( se.errno )
+            elif se.errno == errno.ECONNREFUSED:
+                log.warn(u"Connection refused: %s" % self.port)
+                sys.exit( se.errno )
             else:
                 log.exception(se)
         except KeyboardInterrupt:
-            pass
+            log.info("Caught SIGINT, shutting down.")
+
+        server.cleanup()
 
     def stop(self):
         time.sleep(0.1)

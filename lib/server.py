@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+import errno
 from datetime       import datetime
 from SocketServer   import TCPServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -45,11 +47,6 @@ class Server(HTTPServer):
         self.manager.connect()
         self.data = self.manager.get_data()
 
-
-        log.info(u"Bloops and bleeps at http://%s:%s" % self.server_address)
-        self.serve_forever()
-        self.cleanup()
-
     def serve_forever(self):
         while self.data[u'running']:
             self.handle_request()
@@ -57,8 +54,8 @@ class Server(HTTPServer):
     def cleanup(self):
         log.debug(u"cleaning up")
         self.manager.shutdown()
+        self.socket.close()
         self.server_close()
-        #sys.exit(1)
 
 
 class ServerRequestHandler(BaseHTTPRequestHandler):
@@ -148,6 +145,12 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
             if user_agent:      log.info(u"User-Agent:  %s" % user_agent)
 
             self.do_HEAD( icy_client )
-            Streamer( self.request, self.server.port ).stream( icy_client )
+            try:
+                Streamer( self.request, self.server.port ).stream( icy_client )
+            except IOError, e:
+                if e.errno != errno.ECONNRESET:
+                    log.warn("streamer hung up")
+            except EOFError:
+                    log.warn("streamer hung up")
 
         return 0
