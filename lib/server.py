@@ -52,7 +52,6 @@ class Server(HTTPServer):
             self.handle_request()
 
     def cleanup(self):
-        log.debug(u"cleaning up")
         self.manager.shutdown()
         self.socket.close()
         self.server_close()
@@ -61,7 +60,6 @@ class Server(HTTPServer):
 class ServerRequestHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self, icy_client):
-        log.debug(u"head")
         #if icy_client:
         self.send_response(200, u"ICY")
         # fixme verbose
@@ -83,7 +81,6 @@ class ServerRequestHandler(BaseHTTPRequestHandler):
         time.sleep(6000)
 
     def do_GET(self):
-        log.debug(u"post")
         # Handle well-behaved bots
         _path = self.path.strip()
         log.info(u"Request path: %s" % _path)

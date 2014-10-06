@@ -67,7 +67,11 @@ class Scrobbler(threading.Thread):
                     error = scrobble_item.error
                     etime = scrobble_item.etime
 
-                    (tracknumber, artist, album, track) = [escape(item) for item in song.tags]
+                    try:
+                        (tracknumber, artist, album, track) = [escape(item) for item in song.tags]
+                    except ValueError:
+                        log.info("skipping scrobble for {} (bad tags)".format(song.path))
+                        continue
 
                     if type == NOW_PLAYING:
                         log.debug(u"scrobbling now playing %s %s %s" %

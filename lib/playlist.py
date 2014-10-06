@@ -200,7 +200,10 @@ class Playlist(object):
             elif is_stream( arg ):
                 raise NotImplementedError # TODO
             else:
-                assert isdir( arg )
+                try:
+                    assert isdir( arg )
+                except:
+                    print "{} is not a directory.".format(arg)
                 elist = self.enqueue_list( arg )
                 elist.sort()
 
