@@ -43,6 +43,7 @@ class Config(object):
             u'audio/x-flac'                 : u'flac',
             u'audio/aac'                    : u'aac',
             u'audio/mp4'                    : u'm4a',
+            u'audio/x-m4a'                  : u'm4a',
             u'audio/wav'                    : u'wav',
             u'audio/ogg'                    : u'ogg',
             u'application/octet-stream'     : '?',
