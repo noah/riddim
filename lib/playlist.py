@@ -16,29 +16,10 @@ from lib.config     import Config
 from lib.logger     import log
 from lib.song       import Song
 from lib.data       import DataManager
-from lib.util       import is_stream
+from lib.util       import is_stream, filesizeformat
 
 label_bool      = {True: u'on', False: u'off'}
 label_status    = {u"stopped" : u".", u"playing" : u">"}
-
-
-def filesizeformat(bytes):
-    """
-    Formats the value like a 'human-readable' file size (i.e. 13 KB, 4.1 MB,
-    102 bytes, etc).  Modified django
-    """
-    try:    bytes = float(bytes)
-    except (TypeError, ValueError, UnicodeDecodeError):
-        return u"%s bytes" % 0
-
-    pretty = lambda x: round(x, 1)
-
-    if bytes < 1024: return u"%s bytes" % pretty(bytes)
-    if bytes < 1024 * 1024: return u"%s KB" % pretty((bytes / 1024))
-    if bytes < 1024 * 1024 * 1024: return u"%s MB" % pretty((bytes / (1024 * 1024)))
-    if bytes < 1024 * 1024 * 1024 * 1024: return u"%s GB" % pretty((bytes / (1024 * 1024 * 1024)))
-    if bytes < 1024 * 1024 * 1024 * 1024 * 1024: return u"%s TB" % pretty((bytes / (1024 * 1024 * 1024 * 1024)))
-    return u"%s PB" % pretty((bytes / (1024 * 1024 * 1024 * 1024 * 1024)))
 
 
 class PlaylistFile(object):
@@ -80,6 +61,7 @@ class PlaylistFile(object):
 def crunch(path):
     return Song(path)
 
+
 class Playlist(object):
 
     def __init__(self, port, pool):
@@ -103,9 +85,8 @@ class Playlist(object):
             log.error("Connection refused.")
             sys.exit()
 
-        self.data = manager.get_data()
-
-        playlist_data = None
+        self.data       = manager.get_data()
+        playlist_data   = None
         try:                playlist_data = self.data['playlist']
         except KeyError:    playlist_data = PlaylistFile.read()
 
@@ -180,13 +161,15 @@ class Playlist(object):
 
         return song
 
-    def enqueue_list(self, path):
+    def enqueue_list(self, path, extensions=None):
+        if extensions:  wantfile = lambda x: x.endswith(extensions)
+        else:           wantfile = lambda _: True
         results = []
         for base, dirs, files in walk(path):
-            results.extend( realpath( join(base, f) ) for f in files )
+            results.extend( realpath( join(base, f) ) for f in files if wantfile(f) )
         return results
 
-    def enqueue(self, args):
+    def enqueue(self, args, extensions=None):
         tracks  = streams = 0
         pl      = self.data[u'playlist']
 
@@ -195,23 +178,18 @@ class Playlist(object):
             log.info(u"+ {}".format(arg.decode('utf-8')))
             elist = None
 
-            if isfile( arg ):
-                elist = [ realpath( arg ) ]
-            elif is_stream( arg ):
-                raise NotImplementedError # TODO
+            if isfile( arg ):       elist = [ realpath( arg ) ]
+            elif is_stream( arg ):  raise NotImplementedError # TODO
             else:
-                try:
-                    assert isdir( arg )
-                except:
-                    print "{} is not a directory.".format(arg)
-                elist = self.enqueue_list( arg )
+                try:    assert isdir( arg )
+                except: print "{} is not a directory.".format(arg)
+                elist = self.enqueue_list( arg, extensions )
                 elist.sort()
 
             if elist is not None:
                 track_count = int(len(pl))
                 if track_count == 0:    last = 0
                 else:                   last = sorted(pl.keys())[-1] + 1
-
 
                 songs = self.pool.map(crunch, elist)
 
@@ -243,7 +221,7 @@ class Playlist(object):
     # would also be nice to return a list of *artists* whose tracks were
     # removed
     # by int
-    def clear(self, regex=None):
+    def clear(self, regex=None, extensions=None):
 
         try:
 
@@ -256,9 +234,14 @@ class Playlist(object):
                 old_index       = data[u'index']
                 new_playlist    = {}
 
+                print data[u'playlist']
+
                 i = 0
                 for pl_key in pl_keys:
                     old_song = old_playlist[pl_key]
+
+                    # Ignore song if we're given an extension and it does not match
+                    if extensions is not None and not old_song.path.endswith(extensions): continue
 
                     # If the track does not match the removal regex (i.e.,
                     # should be kept), then append it and increment the
@@ -294,8 +277,8 @@ class Playlist(object):
                     #   3) We removed n tracks coming after the index.
                     #   No re-ordering necessary
 
-                data[u'playlist'] = new_playlist
-                self.data = data
+                    data[u'playlist'] = new_playlist
+                    self.data = data
 
             else:
                 # clear everything
@@ -349,7 +332,7 @@ class Playlist(object):
             q.append(u"{}".format(  self  ))
         return u"\n".join( q )
 
-    def index(self, index):
+    def index(self, index, _):
 
         if index == u"+1":  # corresponds to option -n with no argument
             self.next()

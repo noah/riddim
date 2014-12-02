@@ -39,6 +39,11 @@ class Args(object):
                     u"help"      : u"clear playlist of tracks matching REGEX",
                     u"metavar"   : u"REGEX"
                 }],
+                [(u"-x", u"--extensions"), {
+                    u"help"      : u"restrict operation to files with EXTENSIONS",
+                    u"metavar"   : u"EXTENSION1,[EXTENSION2,...]",
+                    u"type"      : lambda s: tuple(s.split(','))
+                }],
                 [(u"-e", u"--enqueue"), {
                     u"metavar"   : u"/PATH/TO/TRACKS",
                     u"help"      : u"enqueue track(s)",

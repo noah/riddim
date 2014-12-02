@@ -4,18 +4,16 @@
 import sys
 import codecs
 from multiprocessing import Pool
-from signal import signal, SIGINT, SIG_IGN
 
 from lib.args       import Args
 from lib.control    import Control
 from lib.playlist   import Playlist
 from lib.config     import Config
+from lib.util       import init_worker
+from lib.logger     import log
 
 # needed if LANG=en_US.UTF-8
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
-
-def init_worker():
-    signal(SIGINT, SIG_IGN)
 
 def main():
     args = Args()
@@ -37,13 +35,14 @@ def main():
         elif args.next_album            : print playlist.next_album()
         elif args.next_artist           : print playlist.next_artist()
         else:
+            limit_to_extensions = args.args_dict.get('extensions', None)
             for action, arg in args.args_dict.items():
                 try:
                     print {
                         u"clear"         : playlist.clear,
                         u"index"         : playlist.index,
                         u"enqueue"       : playlist.enqueue
-                    }[ action ]( arg )
+                    }[ action ]( arg, limit_to_extensions )
                 except KeyError: pass
                 except KeyboardInterrupt:
                     pool.terminate()

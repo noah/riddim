@@ -40,9 +40,11 @@ shutting down:
 ```bash
 % riddim -e Siamese\ Dream                      # add a directory of tracks to the playlist ...
 % riddim -e 03.\ Today.mp3                      # ... or a single track
+% riddim -e some_dir -x flac                    # ... or only flac files from a directory
 % riddim -i 9                                   # skip to 9th track in the playlist
 % riddim -c ^Smashing                           # clear tracks from playlist via regex pattern
 % riddim -c .                                   # clear all tracks
+% riddim -c /foo/ -x mp3                        # clear mp3 tracks matching 'foo'
 % riddim -h                                     # show help
 % aliased to riddim -q | less --pattern="^\*"   # show playlist at current track 
 ```
@@ -94,5 +96,7 @@ way (cough ... thus defeating corporate firewalls ...  cough).
 I ripped off some code from Amarok for the streaming logic (lib/streamer).
 
 ## TODO
+
++ clear by mimetype
 
 + Web control (?)
