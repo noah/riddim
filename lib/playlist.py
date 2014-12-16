@@ -234,8 +234,6 @@ class Playlist(object):
                 old_index       = data[u'index']
                 new_playlist    = {}
 
-                print data[u'playlist']
-
                 i = 0
                 for pl_key in pl_keys:
                     old_song = old_playlist[pl_key]
