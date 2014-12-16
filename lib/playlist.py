@@ -238,19 +238,20 @@ class Playlist(object):
                 for pl_key in pl_keys:
                     old_song = old_playlist[pl_key]
 
-                    # Ignore song if we're given an extension and it does not match
-                    if extensions is not None and not old_song.path.endswith(extensions): continue
+                    # Do some pruning:
 
-                    # If the track does not match the removal regex (i.e.,
-                    # should be kept), then append it and increment the
-                    # index
-                    if not re.search(regex, unicode(old_song)):
-                        new_playlist[i] = old_playlist[pl_key]
-                        i = i + 1
-                    else:
+                    prune_because_extension = extensions is not None and old_song.path.endswith(extensions)
+                    prune_because_regex     = bool(re.search(regex, unicode(old_song)))
+
+                    # If the track matches the removal regex or removal
+                    # extension, then append it and increment the index
+                    if True in [prune_because_extension, prune_because_regex]:
                         removed.append(pl_key)
                         print u"x ",
                         sys.stdout.flush()
+                    else:
+                        new_playlist[i] = old_playlist[pl_key]
+                        i = i + 1
 
                 if len(removed) > 0:
                     # Then we may need to adjust now-playing pointer.  There
