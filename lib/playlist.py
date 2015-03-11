@@ -300,7 +300,7 @@ class Playlist(object):
             print type(old_song)
             print(old_song is None)
 
-    def query(self):
+    def query(self, lines=0):
         name            = u"riddim"
         uptime          = self.uptime()
         status_symbol   = label_status[ self.status ]
@@ -329,6 +329,10 @@ class Playlist(object):
                     seconds_to_time(self.data[u"elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
             q.append(u"{} ({})".format( self.data[u"progress"], song.length) )
             q.append(u"{}".format(  self  ))
+
+        if lines > 0:
+            q = q[:lines]
+            q.append('...')
         return u"\n".join( q )
 
     def index(self, index, _):
@@ -348,7 +352,7 @@ class Playlist(object):
         if self.data[u'status'] == 'playing':
             self.data[u'skip'] = True
 
-        return index
+        return self.query(lines=10)
 
     def index_bounds(self):
         sorted_indices = sorted(self.data[u'playlist'].keys())
