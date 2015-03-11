@@ -129,7 +129,10 @@ class Streamer(object):
                         elapsed = time.time() - song_start_time
                         self.playlist.data[u'elapsed'] = elapsed
                         # set percentage elapsed
-                        self.playlist.data[u"progress"] = float(elapsed * 100) / song.length
+                        try:
+                            self.playlist.data[u"progress"] = float(elapsed * 100) / song.length
+                        except ZeroDivisionError:
+                            self.playlist.data[u"progress"] = 0
 
                         if len(buffer) == 0: break
 
