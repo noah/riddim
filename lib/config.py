@@ -46,6 +46,7 @@ class Config(object):
             u'audio/x-m4a'                  : u'm4a',
             u'audio/wav'                    : u'wav',
             u'audio/ogg'                    : u'ogg',
+            u'video/mp4'                    : u'mp4',
             u'application/octet-stream'     : '?',
         }
 
