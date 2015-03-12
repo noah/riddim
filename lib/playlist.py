@@ -283,7 +283,8 @@ class Playlist(object):
                 # clear everything
                 self.data[u'playlist'] = {}
 
-            return u"%s tracks removed." % len(removed)
+            print u"%s tracks removed." % len(removed)
+            return self.query(lines=10)
 
             # index           = self.data['index'] + 1
             # pl_len          = len(self.data['playlist'])
