@@ -44,7 +44,7 @@ shutting down:
 % riddim -i 9                                   # skip to 9th track in the playlist
 % riddim -c ^Smashing                           # clear tracks from playlist via regex pattern
 % riddim -c .                                   # clear all tracks
-% riddim -c /foo/ -x mp3                        # clear mp3 tracks matching 'foo'
+% riddim -c foo -x mp3                          # clear mp3 tracks matching 'foo' (regex)
 % riddim -h                                     # show help
 % aliased to riddim -q | less --pattern="^\*"   # show playlist at current track 
 ```

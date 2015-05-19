@@ -221,31 +221,34 @@ class Playlist(object):
     # would also be nice to return a list of *artists* whose tracks were
     # removed
     # by int
-    def clear(self, regex=None, extensions=None):
+    def clear(self, userregex=None, extensions=None):
 
         try:
-
             removed = []
-            if regex:           # user passed in a regex
-                regex           = re.compile(regex, re.IGNORECASE)
+            if userregex:           # user passed in a regex
+                regex           = re.compile(userregex, re.IGNORECASE)
                 data            = self.data
                 old_playlist    = data[u'playlist']
                 pl_keys         = sorted(old_playlist.keys())
                 old_index       = data[u'index']
                 new_playlist    = {}
+                have_extensions = extensions is not None
 
+                # for each song
                 i = 0
                 for pl_key in pl_keys:
-                    old_song = old_playlist[pl_key]
+                    old_song        = old_playlist[pl_key]
+                    regex_match     = bool(re.search(regex, unicode(old_song)))
 
                     # Do some pruning:
+                    prune = regex_match
 
-                    prune_because_extension = extensions is not None and old_song.path.endswith(extensions)
-                    prune_because_regex     = bool(re.search(regex, unicode(old_song)))
+                    # if user passed extensions, only prune if the extension
+                    # matches
+                    if have_extensions:
+                        prune = regex_match and old_song.path.endswith(extensions)
 
-                    # If the track matches the removal regex or removal
-                    # extension, then append it and increment the index
-                    if True in [prune_because_extension, prune_because_regex]:
+                    if prune:
                         removed.append(pl_key)
                         print u"x ",
                         sys.stdout.flush()
@@ -283,8 +286,11 @@ class Playlist(object):
                 # clear everything
                 self.data[u'playlist'] = {}
 
-            print u"%s tracks removed." % len(removed)
-            return self.query(lines=10)
+            nr = len(removed)
+            if nr > 0:
+                print u"{} tracks removed.".format(nr)
+                return self.query(lines=10)
+            return "no matches for regex `{}'".format(userregex)
 
             # index           = self.data['index'] + 1
             # pl_len          = len(self.data['playlist'])
