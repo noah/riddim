@@ -3,6 +3,7 @@ import time
 import errno
 import subprocess
 import Queue
+from socket import error
 
 from lib.config     import Config
 from lib.scrobble   import Scrobbler, ScrobbleItem, NOW_PLAYING, PLAYED
@@ -157,18 +158,27 @@ class Streamer(object):
                 else:
                     self.playlist.data[u'skip'] = False
                 self.dirty_meta = True
-            except IOError, e:
-                if e.errno == errno.EPIPE:
-                    self.empty_scrobble_queue()
-                    log.info(u"Broken pipe.  Client disconnected.")
-                elif e.errno == errno.ECONNRESET:
-                    self.empty_scrobble_queue()
-                    log.info(u"Client disconnected")
+            except error, e:
+                if isinstance(e.args, tuple):
+                    print "errno is %d" % e[0]
+                    if e[0] == errno.EPIPE:
+                        # remote peer disconnected
+                        print "Detected remote disconnect"
+
+                    elif e.errno == errno.ECONNRESET:
+                        self.empty_scrobble_queue()
+                        log.info(u"Client disconnected")
+                    else:
+                        log.info(u"Unknown socket error")
+                        self.empty_scrobble_queue()
+                        log.exception(errno.errorcode[e.errno])
                 else:
-                    self.empty_scrobble_queue()
-                    log.exception(errno.errorcode[e.errno])
+                    print "socket error ", e
+                self.request.close()
                 self.playlist.data[u'status'] = 'stopped'
-                break  # while
+                break # while
+            except IOError, e:
+                log.info("IO ERROR")
             except KeyboardInterrupt:
                 self.playlist.data[u'running']   = False
             finally:
