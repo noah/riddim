@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import time
 from signal import signal, SIGINT, SIG_IGN
 
 def init_worker():
@@ -29,3 +30,4 @@ def filesizeformat(bytes):
     return u"%s PB" % pretty((bytes / (1024 * 1024 * 1024 * 1024 * 1024)))
 
 
+seconds_to_time = lambda x: time.strftime(u'%H:%M:%S', time.gmtime(x))

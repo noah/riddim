@@ -4,7 +4,6 @@ from os import walk
 from os.path import isfile, realpath, join, isdir
 import re
 import sys
-import time
 import math
 import codecs
 import random
@@ -16,7 +15,7 @@ from lib.config     import Config
 from lib.logger     import log
 from lib.song       import Song
 from lib.data       import DataManager
-from lib.util       import is_stream, filesizeformat
+from lib.util       import is_stream, filesizeformat, seconds_to_time
 
 label_bool      = {True: u'on', False: u'off'}
 label_status    = {u"stopped" : u".", u"playing" : u">"}
@@ -331,7 +330,6 @@ class Playlist(object):
             percentage      = int(self.data[u"progress"] / step)
             fill            = percentage * u'='
             blank           = (width - percentage) * u'.'
-            seconds_to_time = lambda x: time.strftime(u'%H:%M:%S', time.gmtime(x))
             q.append(u"{} {} [{}>{}] {}%".format(
                     seconds_to_time(self.data[u"elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
             q.append(u"{} ({})".format( self.data[u"progress"], song.length) )
