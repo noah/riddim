@@ -18,7 +18,6 @@ except:
 
 from logger         import log
 from lib.config     import Config
-from lib.util       import seconds_to_time
 
 
 # todo make these static
@@ -195,7 +194,7 @@ class Song(AudioUtil):
 
     def _tags(self):
         _tags = [unicode(self.tracknumber).zfill(2), self.artist, self.album,
-                 self.title, "[{}]".format(seconds_to_time(self.length))]
+                 self.title, ]
         if None in _tags[1:] or u'' in _tags: _tags = [u"", self.path, u"", u""]
         return _tags
 

@@ -134,7 +134,8 @@ class Playlist(object):
             new_pl.append(' '.join([
                 pre,
                 u'%*d' % (pad_digits, i + 1),
-                u"[", probable_filetype , u"]",
+                u"[ {} / {} ]".format(probable_filetype,
+                                      seconds_to_time(song.length)),
                 u"{}".format(song),
                 post
             ]))
@@ -313,27 +314,29 @@ class Playlist(object):
         song            = self.get_song()
         #
         width           = 72
-        fill            = u'='
-        blank           = u'.'
-        step            = 100 / float(width)
+        # fill            = u'='
+        # blank           = u'.'
+        # step            = 100 / float(width)
         #
         q               = []
-        q.append(u"{} up {} sent {} total continue {} shuffle {} repeat {} index {}".format(
-            name, uptime, filesizeformat(self.data["sum_bytes"]),
-            self.data[u"continue"],
-            self.data[u"shuffle"],
-            self.data[u"repeat"],
-            self.data[u"index"]
-        ))
+        q.append(u"{} up {}".format(name, uptime))
+        q.append(u"sent {} total".format(filesizeformat(self.data["sum_bytes"])))
+        # q.append(u"continue {} shuffle {} repeat {} index {}".format(
+        #     self.data[u"continue"],
+        #     self.data[u"shuffle"],
+        #     self.data[u"repeat"],
+        #     self.data[u"index"]
+        # ))
         q.append(u"{} {}".format(status_symbol, song))
+        q.append('~' * width)
         if self.status == u"playing":
-            percentage      = int(self.data[u"progress"] / step)
-            fill            = percentage * u'='
-            blank           = (width - percentage) * u'.'
-            q.append(u"{} {} [{}>{}] {}%".format(
-                    seconds_to_time(self.data[u"elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
-            q.append(u"{} ({})".format( self.data[u"progress"], song.length) )
             q.append(u"{}".format(  self  ))
+        #     percentage      = int(self.data[u"progress"] / step)
+        #     fill            = percentage * u'='
+        #     blank           = (width - percentage) * u'.'
+        #     q.append(u"{} {} [{}>{}] {}%".format(
+        #             seconds_to_time(self.data[u"elapsed"]), seconds_to_time(song.length), fill, blank, percentage))
+        #     q.append(u"{} ({})".format( self.data[u"progress"], song.length) )
 
         if lines > 0:
             q = q[:lines]
