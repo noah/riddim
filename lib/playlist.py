@@ -355,7 +355,25 @@ class Playlist(object):
                 elif new_index < first_index:   new_index = first_index
                 self.data[u'index'] = new_index
             except ValueError:
-                return u"``{}'' is not an integer".format(index)
+                # artist / album name given (?)
+
+                def update_idx(slice, offset):
+                    for i, n in enumerate(slice):
+                        if index.lower() in unicode(n).lower():
+                            self.data['index'] = offset + i
+                            return True
+                    return False
+
+                pos   = self.data[u'index']
+
+                # look from pos+1 to end of list
+                found = update_idx(self.data[u'playlist'].values()[pos+1:], pos+1)
+                if not found:
+                    # look from beginning of list to pos-1
+                    found = update_idx(self.data[u'playlist'].values()[:pos-1], 0)
+                    print found
+                if not found: # give up
+                    return "Index is not an integer, or no match found."
 
         if self.data[u'status'] == 'playing':
             self.data[u'skip'] = True
