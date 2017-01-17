@@ -49,6 +49,7 @@ class Config(object):
             u'audio/ogg'                    : u'ogg',
             u'audio/x-ape'                  : u'ape',
             u'video/mp4'                    : u'mp4',
+            u'video/x-matroska'             : u'matroska',
             u'application/octet-stream'     : '?',
         }
 
